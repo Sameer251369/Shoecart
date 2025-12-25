@@ -24,8 +24,7 @@ export const LandingPage = ({ onShopNow }: LandingPageProps) => {
   }, []);
 
   return (
-    /* mt-20 offsets the fixed navbar, h-[calc(100vh-80px)] fills the remaining screen exactly */
-    <section className="relative mt-20 h-[calc(100vh-80px)] bg-white flex flex-col overflow-hidden">
+    <section className="relative pt-32 min-h-screen bg-white flex flex-col overflow-hidden">
       <div className="flex-1 w-full grid grid-cols-1 lg:grid-cols-12 items-stretch gap-0">
         
         {/* Text Content - Perfectly centered vertically */}
@@ -33,7 +32,7 @@ export const LandingPage = ({ onShopNow }: LandingPageProps) => {
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 1 }}
-          className="z-20 px-8 md:px-20 lg:col-span-5 order-2 lg:order-1 flex flex-col justify-center bg-white"
+          className="z-10 px-8 md:px-20 lg:col-span-5 order-2 lg:order-1 flex flex-col justify-center bg-white py-16 lg:py-0"
         >
           <div className="max-w-md">
             <h1 className="text-[clamp(3rem,7vw,5rem)] font-light leading-[0.9] tracking-tighter uppercase mb-6 text-zinc-900">

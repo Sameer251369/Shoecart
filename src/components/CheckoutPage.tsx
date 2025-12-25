@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ArrowLeft, CreditCard, Loader2, MapPin, Phone, ShieldCheck, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, CreditCard, Loader2, MapPin, ShieldCheck, CheckCircle, XCircle } from 'lucide-react';
+
 
 interface CheckoutProps {
   cartItems: any[];

@@ -9,7 +9,7 @@ const DJANGO_URL = 'http://127.0.0.1:8000';
 interface ProductCardProps {
   product: Product;
   onAddToCart: (p: Product) => void;
-  onOpenDetail?: (p: Product) => void; // Made optional with '?'
+  onOpenDetail?: (p: Product) => void;
 }
 
 export const ProductCard = ({ product, onAddToCart, onOpenDetail }: ProductCardProps) => {
@@ -40,6 +40,7 @@ export const ProductCard = ({ product, onAddToCart, onOpenDetail }: ProductCardP
           </div>
         )}
 
+        {/* Desktop hover add to cart */}
         <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out hidden md:block">
           <button
             onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
@@ -52,8 +53,8 @@ export const ProductCard = ({ product, onAddToCart, onOpenDetail }: ProductCardP
         </div>
       </div>
 
-      <div className="px-1 pb-4 flex flex-col" onClick={() => onOpenDetail?.(product)}>
-        <div className="flex flex-col gap-1">
+      <div className="px-1 pb-4 flex flex-col">
+        <div className="flex flex-col gap-1" onClick={() => onOpenDetail?.(product)}>
           <h3 className="text-[10px] font-medium uppercase tracking-[0.15em] text-zinc-400">StrideZone Edit</h3>
           <div className="flex justify-between items-baseline">
             <h4 className="text-xs md:text-sm font-semibold uppercase tracking-tight text-zinc-900 group-hover:text-zinc-600 transition-colors">
@@ -70,6 +71,16 @@ export const ProductCard = ({ product, onAddToCart, onOpenDetail }: ProductCardP
             {isOutOfStock ? "Out of Stock" : "Limited Edition"}
           </p>
         </div>
+
+        {/* Mobile add to cart button - Always visible */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
+          disabled={isOutOfStock}
+          className="md:hidden w-full bg-zinc-900 hover:bg-zinc-800 text-white py-3 rounded-lg text-xs font-semibold uppercase tracking-wide flex items-center justify-center gap-2 mt-4 transition-colors disabled:bg-zinc-300 disabled:cursor-not-allowed"
+        >
+          <ShoppingBag className="w-4 h-4" />
+          {isOutOfStock ? "Sold Out" : "Add to Cart"}
+        </button>
       </div>
     </motion.div>
   );
