@@ -7,7 +7,7 @@ export const OrdersPage = ({ token }: any) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
 
-  const DJANGO_URL = 'http://127.0.0.1:8000';
+  const DJANGO_URL = 'http://shoecart-backend1.onrender.com';
 
   useEffect(() => {
     fetch(`${DJANGO_URL}/api/orders/my-orders/`, {

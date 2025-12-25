@@ -32,7 +32,7 @@ export const PaymentModal = ({ isOpen, onClose, total, token, items, onSuccess }
     setError(null);
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/orders/create/', {
+      const response = await fetch('http://shoecart-backend1.onrender.com/api/orders/create/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
