@@ -23,111 +23,134 @@ export const CartSidebar = ({
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-zinc-900/60 backdrop-blur-sm z-[60]"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
           />
           
           <motion.div 
             initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed right-0 top-0 h-full w-full max-w-md bg-white z-[70] shadow-[-20px_0_50px_rgba(0,0,0,0.1)] flex flex-col"
+            transition={{ type: 'spring', damping: 35, stiffness: 300 }}
+            className="fixed right-0 top-0 h-full w-full max-w-md bg-white z-[70] shadow-2xl flex flex-col"
           >
             {/* Header */}
-            <div className="p-8 border-b border-zinc-100 flex justify-between items-center">
+            <div className="px-6 py-5 border-b border-zinc-200 flex justify-between items-center bg-gradient-to-b from-zinc-50 to-white">
               <div>
-                <h2 className="text-2xl font-[1000] italic uppercase tracking-tighter leading-none">Your Bag</h2>
-                <p className="text-[10px] text-zinc-400 uppercase tracking-widest mt-1 font-bold">
-                  {items.length} {items.length === 1 ? 'Item' : 'Items'} selected
+                <h2 className="text-xl font-bold tracking-tight text-zinc-900">Shopping Cart</h2>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  {items.length} {items.length === 1 ? 'item' : 'items'}
                 </p>
               </div>
               <button 
                 onClick={onClose}
-                className="p-2 hover:bg-zinc-100 rounded-full transition-all duration-300 hover:rotate-90"
+                className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5 text-zinc-600" />
               </button>
             </div>
 
             {/* Cart Items */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <div className="flex-1 overflow-y-auto">
               {items.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center p-12 text-center">
-                  <div className="w-20 h-20 bg-zinc-50 rounded-full flex items-center justify-center mb-6">
-                    <ShoppingBag className="w-8 h-8 text-zinc-200" />
+                <div className="h-full flex flex-col items-center justify-center p-8 text-center">
+                  <div className="w-24 h-24 bg-zinc-100 rounded-full flex items-center justify-center mb-4">
+                    <ShoppingBag className="w-10 h-10 text-zinc-300" />
                   </div>
-                  <p className="uppercase font-black tracking-[0.2em] text-[10px] text-zinc-400">Your bag is currently empty</p>
+                  <h3 className="font-semibold text-zinc-900 mb-1">Your cart is empty</h3>
+                  <p className="text-sm text-zinc-500">Add items to get started</p>
                 </div>
               ) : (
-                <div className="divide-y divide-zinc-50">
+                <div className="p-4 space-y-4">
                   {items.map(item => (
-                    <div key={item.id} className="p-8 flex gap-6 hover:bg-zinc-50/50 transition-colors group">
-                      <div className="w-28 h-32 bg-zinc-100 shrink-0 overflow-hidden rounded-xl border border-zinc-100 relative">
-                        <img 
-                           src={formatImageUrl(item.images?.[0]?.image)} 
-                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                           alt={item.name}
-                        />
-                      </div>
-                      <div className="flex-1 flex flex-col justify-between py-1">
-                        <div className="flex justify-between items-start gap-4">
-                          <h4 className="font-bold uppercase text-sm tracking-tighter leading-tight italic">{item.name}</h4>
-                          <button 
-                            onClick={() => onRemove(item.id)} 
-                            className="text-zinc-300 hover:text-black transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                    <motion.div 
+                      key={item.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, x: 100 }}
+                      className="bg-white border border-zinc-200 rounded-xl p-4 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex gap-4">
+                        <div className="w-20 h-20 bg-zinc-100 shrink-0 overflow-hidden rounded-lg">
+                          <img 
+                             src={formatImageUrl(item.images?.[0]?.image)} 
+                             className="w-full h-full object-cover" 
+                             alt={item.name}
+                          />
                         </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center bg-white border border-zinc-200 rounded-full p-1 shadow-sm">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start gap-2 mb-2">
+                            <h4 className="font-semibold text-sm text-zinc-900 leading-tight">{item.name}</h4>
                             <button 
-                              onClick={() => onUpdateQuantity(item.id, -1)} 
-                              className="w-7 h-7 flex items-center justify-center hover:bg-zinc-100 rounded-full transition-colors"
+                              onClick={() => onRemove(item.id)} 
+                              className="text-zinc-400 hover:text-red-500 transition-colors p-1"
                             >
-                              <Minus className="w-3 h-3"/>
-                            </button>
-                            <span className="w-8 text-center text-xs font-black">{item.quantity}</span>
-                            <button 
-                              onClick={() => onUpdateQuantity(item.id, 1)} 
-                              className="w-7 h-7 flex items-center justify-center hover:bg-zinc-100 rounded-full transition-colors"
-                            >
-                              <Plus className="w-3 h-3"/>
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
-                          <p className="font-[1000] text-sm tracking-tighter">${(parseFloat(item.price) * item.quantity).toFixed(2)}</p>
+                          
+                          <div className="flex items-center justify-between mt-3">
+                            <div className="flex items-center bg-zinc-50 border border-zinc-200 rounded-lg overflow-hidden">
+                              <button 
+                                onClick={() => onUpdateQuantity(item.id, -1)} 
+                                className="w-8 h-8 flex items-center justify-center hover:bg-zinc-100 transition-colors"
+                              >
+                                <Minus className="w-3.5 h-3.5 text-zinc-600"/>
+                              </button>
+                              <span className="w-10 text-center text-sm font-medium text-zinc-900">{item.quantity}</span>
+                              <button 
+                                onClick={() => onUpdateQuantity(item.id, 1)} 
+                                className="w-8 h-8 flex items-center justify-center hover:bg-zinc-100 transition-colors"
+                              >
+                                <Plus className="w-3.5 h-3.5 text-zinc-600"/>
+                              </button>
+                            </div>
+                            <p className="font-bold text-base text-zinc-900">₹{(parseFloat(item.price) * item.quantity).toFixed(2)}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               )}
             </div>
 
             {/* Footer */}
-            <div className="p-8 border-t border-zinc-100 bg-white/80 backdrop-blur-md">
-              <div className="flex justify-between items-end mb-8">
-                <div>
-                  <span className="font-black uppercase text-[10px] tracking-[0.3em] text-zinc-400">Total Amount</span>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-sm font-bold">$</span>
-                    <span className="font-[1000] text-4xl tracking-tighter italic">{total.toFixed(2)}</span>
+            {items.length > 0 && (
+              <div className="border-t border-zinc-200 bg-white p-6 space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-zinc-600">Subtotal</span>
+                    <span className="font-medium text-zinc-900">₹{total.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-zinc-600">Shipping</span>
+                    <span className="font-medium text-green-600">Free</span>
+                  </div>
+                  <div className="flex justify-between text-sm pb-3 border-b border-zinc-200">
+                    <span className="text-zinc-600">Tax (GST 18%)</span>
+                    <span className="font-medium text-zinc-900">₹{(total * 0.18).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-baseline pt-1">
+                    <span className="text-base font-semibold text-zinc-900">Total</span>
+                    <div className="text-right">
+                      <span className="text-2xl font-bold text-zinc-900">₹{(total * 1.18).toFixed(2)}</span>
+                      <p className="text-xs text-zinc-500 mt-0.5">Inclusive of all taxes</p>
+                    </div>
                   </div>
                 </div>
-                <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest pb-1">Tax included</div>
+                
+                <button 
+                  onClick={onCheckout}
+                  disabled={items.length === 0}
+                  className="w-full bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg py-3.5 font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:bg-zinc-300 disabled:cursor-not-allowed"
+                >
+                  <span>Proceed to Checkout</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                
+                <p className="text-xs text-center text-zinc-500">
+                  Secure checkout powered by Stripe
+                </p>
               </div>
-              
-              <button 
-                onClick={onCheckout}
-                disabled={items.length === 0}
-                className="group relative w-full bg-black text-white rounded-2xl py-6 font-black uppercase text-xs tracking-[0.3em] overflow-hidden transition-all active:scale-[0.98] disabled:bg-zinc-200 disabled:cursor-not-allowed"
-              >
-                <div className="relative z-10 flex items-center justify-center gap-3">
-                  <span>Secure Checkout</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </div>
-                <div className="absolute inset-0 bg-zinc-800 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-              </button>
-            </div>
+            )}
           </motion.div>
         </>
       )}
