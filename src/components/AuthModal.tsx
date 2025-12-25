@@ -8,6 +8,12 @@ interface AuthModalProps {
   setToken: (token: string) => void; 
 }
 
+/**
+ * UPDATED: Uses HTTPS and checks for Netlify Environment Variables.
+ * This matches the logic in your App.tsx.
+ */
+const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'https://shoecart-backend1.onrender.com';
+
 export const AuthModal = ({ isOpen, onClose, setToken }: AuthModalProps) => {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,14 +27,14 @@ export const AuthModal = ({ isOpen, onClose, setToken }: AuthModalProps) => {
 
     const endpoint = isLogin ? '/api/token/' : '/api/register/';
     
-    // DEBUG: Log the current state to ensure formData isn't empty
-    console.log("Submitting formData:", formData);
-
+    /**
+     * UPDATED: Construction of the payload.
+     * For login, we send the email inside the 'username' key because 
+     * SimpleJWT looks for 'username' by default.
+     */
     const payload = isLogin
       ? {
-          // Changed to send both email and username keys to satisfy different Django configs
           username: formData.email.toLowerCase().trim(),
-          email: formData.email.toLowerCase().trim(), 
           password: formData.password,
         }
       : {
@@ -38,7 +44,8 @@ export const AuthModal = ({ isOpen, onClose, setToken }: AuthModalProps) => {
         };
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000${endpoint}`, {
+      // FIXED: Added backticks and the API_BASE_URL variable with the correct protocol
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -49,7 +56,6 @@ export const AuthModal = ({ isOpen, onClose, setToken }: AuthModalProps) => {
       if (response.ok) {
         const tokenValue = data.access || data.token;
         if (tokenValue) {
-          // We pass the token to App.tsx which handles localStorage
           setToken(tokenValue);
           onClose();
         } else if (!isLogin) {
@@ -57,9 +63,6 @@ export const AuthModal = ({ isOpen, onClose, setToken }: AuthModalProps) => {
           setError("Account created! Please sign in.");
         }
       } else {
-        // Log the specific backend error to the browser console
-        console.error("Backend Error:", data);
-        
         // Parse Django's nested error format
         const errorMsg = data.detail || 
                          (data.non_field_errors ? data.non_field_errors[0] : null) ||

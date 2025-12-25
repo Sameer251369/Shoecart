@@ -11,7 +11,8 @@ import { CheckoutPage } from './components/CheckoutPage';
 import { OrdersPage } from './components/OrdersPage';
 import { Navbar } from './components/Navbar';
 
-const DJANGO_URL = 'http://127.0.0.1:8000';
+// PRODUCTION URL logic
+const DJANGO_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'https://shoecart-backend1.onrender.com';
 
 // --- Interfaces ---
 export interface ProductImage { id: number; image: string; alt_text: string; }
@@ -36,12 +37,6 @@ function App() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [username, setUsername] = useState<string | null>(null);
-
-  /**
-   * FIX: REMEMBER LOGIN
-   * We initialize the token state directly from localStorage so it's 
-   * available on the very first render.
-   */
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
   
   const productsSectionRef = useRef<HTMLDivElement>(null);
@@ -53,7 +48,6 @@ function App() {
       try {
         setCartItems(JSON.parse(savedCart));
       } catch (e) {
-        console.error("Cart data corrupted:", e);
         localStorage.removeItem('stridezone_cart');
       }
     }
@@ -67,41 +61,23 @@ function App() {
     }
   }, [cartItems, isInitialized]);
 
-  /**
-   * 3. FIX: ENHANCED TOKEN DECODER
-   * Handles session expiry and extracts username from various JWT formats.
-   */
+  // 3. Token Session Management
   useEffect(() => {
     if (token) {
       try {
         const decoded: any = jwtDecode(token);
-        
-        // Check if token is expired
         if (decoded.exp && decoded.exp * 1000 < Date.now()) {
           handleLogout();
-          toast.error("Session expired. Please log in again.");
+          toast.error("Session expired.");
           return;
         }
-
-        /**
-         * Robust username extraction: Handles 'username', 'name', 
-         * or falls back to email prefix.
-         */
-        const name = decoded.username || 
-                     decoded.name || 
-                     (decoded.email ? decoded.email.split('@')[0] : 'Member');
-        
+        const name = decoded.username || decoded.name || 'Member';
         setUsername(name);
-        
-        // Ensure localStorage stays in sync with state
-        localStorage.setItem('token', token);
       } catch (err) {
-        console.error("Invalid token format:", err);
         handleLogout();
       }
     } else {
       setUsername(null);
-      localStorage.removeItem('token');
     }
   }, [token]);
 
@@ -114,7 +90,7 @@ function App() {
       const data = await response.json();
       setProducts(Array.isArray(data) ? data : data.results || []);
     } catch (err) {
-      toast.error("Failed to connect to the server.");
+      toast.error("Server connection failed.");
     } finally {
       setIsLoading(false);
     }
@@ -126,9 +102,7 @@ function App() {
         const catRes = await fetch(`${DJANGO_URL}/api/products/categories/`);
         const catData = await catRes.json();
         setCategories(catData);
-      } catch (e) {
-        console.error("Category fetch error:", e);
-      }
+      } catch (e) { console.error(e); }
       fetchProducts();
     };
     fetchInitialData();
@@ -156,7 +130,7 @@ function App() {
     setCartItems([]);
     setIsCartOpen(false);
     setView('home');
-    toast.success("Logged out successfully");
+    toast.success("Logged out");
   };
 
   const scrollToProducts = () => {
@@ -169,18 +143,13 @@ function App() {
   };
 
   const addToCart = (product: Product) => {
-    if (!token) {
-      setIsAuthOpen(true);
-      return;
-    }
+    if (!token) { setIsAuthOpen(true); return; }
     setCartItems(prev => {
       const exists = prev.find(i => i.id === product.id);
       if (exists) return prev.map(i => i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
       return [...prev, { ...product, quantity: 1 }];
     });
-    toast.success(`${product.name} added to bag`, {
-      style: { borderRadius: '12px', background: '#000', color: '#fff', fontSize: '11px', fontWeight: 'bold' }
-    });
+    toast.success(`${product.name} added to bag`);
     if (window.innerWidth > 768) setIsCartOpen(true);
   };
 
@@ -190,55 +159,31 @@ function App() {
   const formatImageUrl = (path?: string) => {
     if (!path) return '/placeholder-shoe.png'; 
     if (path.startsWith('http')) return path;
-    return `${DJANGO_URL}${path}`;
+    return `${DJANGO_URL}${path.startsWith('/') ? path : `/${path}`}`;
   };
 
   return (
     <div className="min-h-screen bg-white text-black antialiased font-sans selection:bg-black selection:text-white">
-      <Toaster position="bottom-center" toastOptions={{ duration: 3000 }} />
+      <Toaster position="bottom-center" />
       
       <Navbar 
-        token={token}
-        username={username}
-        cartCount={cartCount}
-        categories={categories}
-        activeCategory={activeCategory}
-        onAuthOpen={() => setIsAuthOpen(true)}
-        onLogout={handleLogout}
-        onCartOpen={() => setIsCartOpen(true)}
-        onSearch={handleSearch}
-        onCategorySelect={handleCategorySelect}
-        setView={setView}
+        token={token} username={username} cartCount={cartCount} categories={categories} activeCategory={activeCategory}
+        onAuthOpen={() => setIsAuthOpen(true)} onLogout={handleLogout} onCartOpen={() => setIsCartOpen(true)}
+        onSearch={handleSearch} onCategorySelect={handleCategorySelect} setView={setView}
       />
 
       <AnimatePresence mode="wait">
         {view === 'home' && (
-          <motion.div 
-            key="home" 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4 }}
-          >
+          <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <LandingPage onShopNow={scrollToProducts} />
             <main ref={productsSectionRef} className="px-6 md:px-12 pt-32 pb-32 max-w-7xl mx-auto">
               <header className="mb-16">
-                <span className="text-xs font-semibold tracking-wide text-zinc-500 block mb-3">
-                  {activeCategory 
-                    ? `Category / ${activeCategory.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}` 
-                    : 'StrideZone / The Collection'}
-                </span>
-                <h2 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight text-zinc-900">
-                  {searchQuery ? `Search results for "${searchQuery}"` : 'New Arrivals'}
+                <span className="text-xs font-semibold tracking-widest text-zinc-400 block mb-3 uppercase">StrideZone / The Collection</span>
+                <h2 className="text-5xl md:text-7xl font-black italic tracking-tighter leading-tight text-zinc-900 uppercase">
+                  {searchQuery ? `Search: ${searchQuery}` : 'New Arrivals'}
                 </h2>
               </header>
-
-              <ProductGrid 
-                isLoading={isLoading} 
-                products={products} 
-                onAddToCart={addToCart}
-                onSelectProduct={() => {}} 
-              />
+              <ProductGrid isLoading={isLoading} products={products} onAddToCart={addToCart} onSelectProduct={() => {}} />
             </main>
           </motion.div>
         )}
@@ -246,14 +191,12 @@ function App() {
         {view === 'checkout' && (
           <motion.div key="checkout" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }}>
             <CheckoutPage 
-              cartItems={cartItems}
-              total={cartTotal}
-              token={token}
-              onBack={() => setView('home')}
+              cartItems={cartItems} total={cartTotal} token={token} onBack={() => setView('home')}
               onOrderSuccess={() => {
                 setCartItems([]);
+                localStorage.removeItem('stridezone_cart');
                 setView('orders');
-                toast.success("Order placed successfully!");
+                toast.success("Order Placed!");
               }}
             />
           </motion.div>
@@ -267,31 +210,19 @@ function App() {
       </AnimatePresence>
 
       <CartSidebar 
-        isOpen={isCartOpen} 
-        onClose={() => setIsCartOpen(false)} 
-        items={cartItems} 
+        isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} items={cartItems} 
         onUpdateQuantity={(id, d) => setCartItems(prev => prev.map(i => i.id === id ? {...i, quantity: Math.max(0, i.quantity + d)} : i).filter(i => i.quantity > 0))} 
         onRemove={(id) => setCartItems(prev => prev.filter(i => i.id !== id))} 
-        total={cartTotal} 
-        formatImageUrl={formatImageUrl} 
-        token={token} 
+        total={cartTotal} formatImageUrl={formatImageUrl} token={token} 
         onCheckout={() => { setIsCartOpen(false); setView('checkout'); }} 
       />
       
       <AuthModal 
-        isOpen={isAuthOpen} 
-        onClose={() => setIsAuthOpen(false)} 
-        setToken={(newToken) => {
-          /**
-           * FIX: IMMEDIATE PERSISTENCE
-           * Ensures localStorage is updated before state triggers a re-render.
-           */
-          localStorage.setItem('token', newToken);
-          setToken(newToken);
-        }} 
+        isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} 
+        setToken={(newToken) => { localStorage.setItem('token', newToken); setToken(newToken); }} 
       />
     </div>
   );
-}
+} // <--- FIXED: The closing brace for the App function
 
 export default App;

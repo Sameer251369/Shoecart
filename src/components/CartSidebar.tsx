@@ -14,8 +14,13 @@ interface CartSidebarProps {
 }
 
 export const CartSidebar = ({ 
-  isOpen, onClose, items, onUpdateQuantity, onRemove, total, formatImageUrl, onCheckout 
+  isOpen, onClose, items, onUpdateQuantity, onRemove, total, formatImageUrl, onCheckout, token 
 }: CartSidebarProps) => {
+  
+  // Total logic including the GST logic from your previous code
+  const gstAmount = total * 0.18;
+  const grandTotal = total + gstAmount;
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -69,10 +74,12 @@ export const CartSidebar = ({
                     >
                       <div className="flex gap-4">
                         <div className="w-20 h-20 bg-zinc-100 shrink-0 overflow-hidden rounded-lg">
+                          {/* UPDATED: Ensures we use the production image URL helper */}
                           <img 
-                             src={formatImageUrl(item.images?.[0]?.image)} 
+                             src={formatImageUrl(item.images?.[0]?.image || item.image)} 
                              className="w-full h-full object-cover" 
                              alt={item.name}
+                             onError={(e) => (e.currentTarget.src = '/placeholder-shoe.png')}
                           />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -126,12 +133,12 @@ export const CartSidebar = ({
                   </div>
                   <div className="flex justify-between text-sm pb-3 border-b border-zinc-200">
                     <span className="text-zinc-600">Tax (GST 18%)</span>
-                    <span className="font-medium text-zinc-900">₹{(total * 0.18).toFixed(2)}</span>
+                    <span className="font-medium text-zinc-900">₹{gstAmount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-baseline pt-1">
                     <span className="text-base font-semibold text-zinc-900">Total</span>
                     <div className="text-right">
-                      <span className="text-2xl font-bold text-zinc-900">₹{(total * 1.18).toFixed(2)}</span>
+                      <span className="text-2xl font-bold text-zinc-900">₹{grandTotal.toFixed(2)}</span>
                       <p className="text-xs text-zinc-500 mt-0.5">Inclusive of all taxes</p>
                     </div>
                   </div>
@@ -142,7 +149,8 @@ export const CartSidebar = ({
                   disabled={items.length === 0}
                   className="w-full bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg py-3.5 font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:bg-zinc-300 disabled:cursor-not-allowed"
                 >
-                  <span>Proceed to Checkout</span>
+                  {/* UX improvement: Inform guest they need to log in if token is missing */}
+                  <span>{token ? 'Proceed to Checkout' : 'Login to Checkout'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
                 

@@ -1,173 +1,124 @@
 import { useEffect, useState } from 'react';
-import { Search, Truck, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Search, Truck, CheckCircle, XCircle, Clock, PackageOpen, ChevronLeft } from 'lucide-react';
 
-export const OrdersPage = ({ token }: any) => {
+interface OrdersPageProps {
+  token: string | null;
+  onBack: () => void; // Added this to match App.tsx
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'https://shoecart-backend1.onrender.com';
+
+export const OrdersPage = ({ token, onBack }: OrdersPageProps) => {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
 
-  const DJANGO_URL = 'http://shoecart-backend1.onrender.com';
-
   useEffect(() => {
-    fetch(`${DJANGO_URL}/api/orders/my-orders/`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+    if (!token) return;
+
+    fetch(`${API_BASE_URL}/api/orders/my-orders/`, {
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     })
     .then(res => res.json())
     .then(data => { 
-      setOrders(data); 
-      setFilteredOrders(data);
+      const ordersList = Array.isArray(data) ? data : (data.results || []);
+      setOrders(ordersList); 
+      setFilteredOrders(ordersList);
       setLoading(false); 
     })
-    .catch(() => setLoading(false));
+    .catch((err) => {
+      console.error("Fetch error:", err);
+      setLoading(false);
+    });
   }, [token]);
 
-  // 1. SAFE NAME RESOLVER
-  const getItemName = (item: any) => {
-    return item.product_name || item.product?.name || item.name || "StrideZone Product";
-  };
-
-  // 2. SAFE PRICE RESOLVER
-  const getItemPrice = (item: any) => {
-    const price = item.price || item.product?.price || item.unit_price || 0;
-    return parseFloat(price).toFixed(2);
-  };
-
-  // 3. SAFE IMAGE RESOLVER
+  const getItemName = (item: any) => item.product_name || item.product?.name || "StrideZone Product";
+  
   const getItemImage = (item: any) => {
-    const imagePath = item.image || item.product?.images?.[0]?.image || item.product_image;
-    if (!imagePath) return null;
-    if (imagePath.startsWith('http')) return imagePath;
-    return `${DJANGO_URL}${imagePath}`;
-  };
-
-  const handleSearch = () => {
-    if (!searchQuery.trim()) {
-      setFilteredOrders(orders);
-      return;
-    }
-    const filtered = orders.filter(order => 
-      order.items.some((item: any) => 
-        getItemName(item).toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    );
-    setFilteredOrders(filtered);
+    const imagePath = item.image || item.product?.images?.[0]?.image;
+    if (!imagePath) return "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?q=80&w=200&auto=format&fit=crop";
+    return imagePath.startsWith('http') ? imagePath : `${API_BASE_URL}${imagePath.startsWith('/') ? imagePath : `/${imagePath}`}`;
   };
 
   const getStatusUI = (status: string) => {
     switch (status?.toLowerCase()) {
-      case 'shipped':
-        return { color: 'text-blue-600', bg: 'bg-blue-600', icon: <Truck className="w-4 h-4" />, text: 'Shipped', desc: 'Your item is on the way' };
-      case 'delivered':
-        return { color: 'text-green-600', bg: 'bg-green-600', icon: <CheckCircle className="w-4 h-4" />, text: 'Delivered', desc: 'Your item has been delivered' };
-      case 'cancelled':
-        return { color: 'text-red-500', bg: 'bg-red-500', icon: <XCircle className="w-4 h-4" />, text: 'Cancelled', desc: 'Order was cancelled' };
-      default:
-        return { color: 'text-orange-500', bg: 'bg-orange-500', icon: <Clock className="w-4 h-4" />, text: 'Confirmed', desc: 'Processing your order' };
+      case 'shipped': return { color: 'text-blue-600', bg: 'bg-blue-600', icon: <Truck className="w-4 h-4" />, text: 'Shipped', desc: 'On the way' };
+      case 'delivered': return { color: 'text-green-600', bg: 'bg-green-600', icon: <CheckCircle className="w-4 h-4" />, text: 'Delivered', desc: 'Handed over' };
+      case 'cancelled': return { color: 'text-red-500', bg: 'bg-red-500', icon: <XCircle className="w-4 h-4" />, text: 'Cancelled', desc: 'Voided' };
+      default: return { color: 'text-orange-500', bg: 'bg-orange-500', icon: <Clock className="w-4 h-4" />, text: 'Confirmed', desc: 'Processing' };
     }
   };
 
-  if (loading) return <div className="pt-40 text-center text-sm font-medium text-zinc-500 italic uppercase tracking-widest">Fetching your gear...</div>;
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-white uppercase tracking-[0.4em] text-[10px] font-black text-zinc-400">
+      Loading Orders...
+    </div>
+  );
 
   return (
-    /* Changed pt-24 to pt-32 to move page further down under the navbar */
-    <div className="min-h-screen bg-[#f1f3f6] pt-32 pb-10 px-4 antialiased">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-4">
-        
-        {/* SIDEBAR */}
-        <aside className="w-full md:w-64 flex-shrink-0">
-          <div className="bg-white shadow-sm rounded-sm p-5 sticky top-32 border border-zinc-200">
-            <h2 className="text-lg font-[1000] italic uppercase tracking-tighter mb-6">Filters</h2>
-            <div className="space-y-6">
-              <p className="text-[10px] font-black uppercase mb-4 tracking-[0.2em] text-zinc-400">Order Status</p>
-              {['On the way', 'Delivered', 'Cancelled'].map(s => (
-                <label key={s} className="flex items-center gap-3 mb-3 cursor-pointer group">
+    <div className="min-h-screen bg-[#f8f8f8] pt-32 pb-20 px-4 md:px-12">
+      <div className="max-w-7xl mx-auto">
+        {/* Navigation Header */}
+        <button 
+          onClick={onBack}
+          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-black transition-colors mb-8"
+        >
+          <ChevronLeft className="w-4 h-4" /> Back to Shop
+        </button>
+
+        <div className="flex flex-col md:flex-row gap-8">
+          <aside className="w-full md:w-64 space-y-8">
+            <h1 className="text-4xl font-black uppercase italic tracking-tighter">My Orders</h1>
+            <div className="bg-white p-6 border border-zinc-200">
+               <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-4">Filter By</p>
+               {['On the way', 'Delivered', 'Cancelled'].map(s => (
+                <label key={s} className="flex items-center gap-3 mb-3 cursor-pointer">
                   <input type="checkbox" className="w-4 h-4 rounded-none border-zinc-300 accent-black" />
-                  <span className="text-xs font-bold uppercase text-zinc-600 group-hover:text-black transition-colors">{s}</span>
+                  <span className="text-[10px] font-bold uppercase">{s}</span>
                 </label>
               ))}
             </div>
-          </div>
-        </aside>
+          </aside>
 
-        {/* MAIN LIST */}
-        <div className="flex-1 space-y-4">
-          {/* SEARCH BAR */}
-          <div className="flex shadow-sm bg-white border border-zinc-200 overflow-hidden mb-6">
-            <input 
-              type="text" 
-              placeholder="Search by product name..."
-              className="flex-1 p-4 outline-none text-xs font-bold uppercase tracking-widest"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <button onClick={handleSearch} className="bg-black text-white px-8 py-4 flex items-center gap-2 font-black text-[10px] uppercase tracking-[0.2em]">
-              <Search className="w-4 h-4" />
-              Find
-            </button>
-          </div>
-
-          {filteredOrders.map((order) => {
-            const ui = getStatusUI(order.status);
-            const totalAmount = order.total_price || order.total_amount || 
-              order.items.reduce((acc: number, item: any) => acc + (parseFloat(item.price || item.unit_price || 0) * item.quantity), 0);
-
-            return (
-              <div key={order.id} className="bg-white border border-zinc-200 rounded-sm p-6 hover:shadow-md transition-all mb-6">
-                <div className="flex justify-between items-center mb-4 pb-4 border-b border-zinc-50">
-                   <div className="flex gap-4">
-                      <span className="text-[10px] font-black text-zinc-900 uppercase tracking-widest">Order ID: #{order.id}</span>
-                      <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                        {new Date(order.created_at || order.date).toLocaleDateString()}
-                      </span>
-                   </div>
-                   <div className="text-right">
-                      <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block">Total Paid</span>
-                      <span className="text-sm font-[1000]">₹{parseFloat(totalAmount).toFixed(2)}</span>
-                   </div>
-                </div>
-
-                {order.items.map((item: any, idx: number) => (
-                  <div key={idx} className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 py-4 border-b border-zinc-50 last:border-0">
-                    <div className="flex gap-6 w-full md:w-2/5">
-                      <div className="w-24 h-24 flex-shrink-0 bg-zinc-50 border border-zinc-100 p-2">
-                        <img 
-                          src={getItemImage(item)} 
-                          alt={getItemName(item)} 
-                          className="w-full h-full object-contain mix-blend-multiply" 
-                        />
-                      </div>
-                      <div className="flex flex-col justify-center">
-                        <p className="text-xs font-black uppercase tracking-tight text-zinc-900 leading-relaxed mb-1">
-                          {getItemName(item)}
-                        </p>
-                        <p className="text-[10px] font-bold text-zinc-400 uppercase">Qty: {item.quantity}</p>
-                      </div>
+          <div className="flex-1 space-y-6">
+            {filteredOrders.length === 0 ? (
+              <div className="bg-white border border-zinc-200 p-20 text-center">
+                <PackageOpen className="w-12 h-12 text-zinc-200 mx-auto mb-4" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">No Orders Yet</p>
+              </div>
+            ) : (
+              filteredOrders.map((order) => {
+                const ui = getStatusUI(order.status);
+                return (
+                  <div key={order.id} className="bg-white border border-zinc-200 p-6">
+                    <div className="flex justify-between border-b border-zinc-100 pb-4 mb-6">
+                      <span className="text-[10px] font-black uppercase">ID: #{order.id}</span>
+                      <span className="text-sm font-black">₹{parseFloat(order.total_price || 0).toLocaleString('en-IN')}</span>
                     </div>
-
-                    <div className="w-24">
-                      <p className="text-sm font-[1000]">₹{getItemPrice(item)}</p>
-                    </div>
-
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-2 h-2 rounded-full ${ui.bg}`} />
-                        <div className="flex items-center gap-2">
-                          <span className={ui.color}>{ui.icon}</span>
-                          <p className={`text-[11px] font-black uppercase tracking-widest ${ui.color}`}>
-                            {ui.text}
-                          </p>
+                    {order.items.map((item: any, idx: number) => (
+                      <div key={idx} className="flex gap-6 items-center">
+                        <img src={getItemImage(item)} className="w-16 h-16 object-contain bg-zinc-50 p-2" alt="" />
+                        <div className="flex-1">
+                          <p className="text-xs font-black uppercase">{getItemName(item)}</p>
+                          <p className="text-[10px] text-zinc-400 font-bold">QTY: {item.quantity}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className={`flex items-center gap-2 ${ui.color}`}>
+                            {ui.icon}
+                            <span className="text-[10px] font-black uppercase">{ui.text}</span>
+                          </div>
                         </div>
                       </div>
-                      <p className="text-[10px] font-bold text-zinc-400 uppercase mt-2">
-                        {ui.desc}
-                      </p>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            );
-          })}
+                );
+              })
+            )}
+          </div>
         </div>
       </div>
     </div>

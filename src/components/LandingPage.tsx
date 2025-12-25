@@ -24,30 +24,42 @@ export const LandingPage = ({ onShopNow }: LandingPageProps) => {
   }, []);
 
   return (
-    <section className="relative pt-32 min-h-screen bg-white flex flex-col overflow-hidden">
+    <section className="relative pt-20 lg:pt-0 min-h-screen bg-white flex flex-col overflow-hidden">
       <div className="flex-1 w-full grid grid-cols-1 lg:grid-cols-12 items-stretch gap-0">
         
-        {/* Text Content - Perfectly centered vertically */}
+        {/* Text Content */}
         <motion.div 
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 1 }}
-          className="z-10 px-8 md:px-20 lg:col-span-5 order-2 lg:order-1 flex flex-col justify-center bg-white py-16 lg:py-0"
+          className="z-10 px-8 md:px-20 lg:col-span-5 order-2 lg:order-1 flex flex-col justify-center bg-white py-12 lg:py-0"
         >
           <div className="max-w-md">
-            <h1 className="text-[clamp(3rem,7vw,5rem)] font-light leading-[0.9] tracking-tighter uppercase mb-6 text-zinc-900">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mb-4"
+            >
+              <span className="text-[10px] font-black uppercase tracking-[0.6em] text-zinc-400">
+                StrideZone Collective
+              </span>
+            </motion.div>
+
+            <h1 className="text-[clamp(3rem,7vw,5.5rem)] font-light leading-[0.85] tracking-tighter uppercase mb-8 text-zinc-900">
               Peak <br /> 
               <span className="font-serif italic text-zinc-400">Motion</span> <br /> 
               Studio
             </h1>
-            <p className="text-zinc-400 text-xs md:text-sm max-w-xs leading-relaxed mb-10 font-bold uppercase tracking-[0.2em]">
+
+            <p className="text-zinc-500 text-xs md:text-sm max-w-xs leading-relaxed mb-10 font-medium uppercase tracking-[0.15em]">
               Engineered for the elite. Our 2025 collection merges brutalist geometry with tech-comfort.
             </p>
             
             <div className="flex">
               <button 
                 onClick={onShopNow}
-                className="group relative inline-flex items-center gap-10 py-6 px-1 border-b-2 border-zinc-900 font-black uppercase tracking-[0.4em] text-[10px] transition-all hover:text-zinc-400 hover:border-zinc-200"
+                className="group relative inline-flex items-center gap-12 py-6 px-1 border-b-2 border-zinc-900 font-black uppercase tracking-[0.4em] text-[10px] transition-all hover:text-zinc-400 hover:border-zinc-200"
               >
                 Enter the Zone
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-4 transition-transform duration-500" />
@@ -56,37 +68,39 @@ export const LandingPage = ({ onShopNow }: LandingPageProps) => {
           </div>
         </motion.div>
 
-        {/* Hero Image Slider - Fills the entire right side from top to bottom */}
-        <div className="relative w-full lg:col-span-7 order-1 lg:order-2 h-[40vh] lg:h-full">
+        {/* Hero Image Slider */}
+        <div className="relative w-full lg:col-span-7 order-1 lg:order-2 h-[50vh] lg:h-screen">
           <AnimatePresence mode="wait">
             <motion.div 
               key={currentImage}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, scale: 1.05 }}
+              animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 1.2 }}
+              transition={{ duration: 1.5, ease: "easeOut" }}
               className="absolute inset-0 bg-zinc-100 overflow-hidden"
             >
               <motion.img 
                 src={HERO_IMAGES[currentImage]} 
                 className="w-full h-full object-cover"
-                initial={{ scale: 1.1 }}
+                initial={{ scale: 1.2 }}
                 animate={{ scale: 1 }}
-                transition={{ duration: 6, ease: "linear" }}
+                transition={{ duration: 8, ease: "linear" }}
                 alt="StrideZone Editorial"
               />
-              {/* Subtle Vignette for depth */}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/40" />
               
-              <div className="absolute bottom-12 left-12 text-white">
+              {/* Overlays */}
+              <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent lg:from-white/20" />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/50" />
+              
+              <div className="absolute bottom-12 left-12 text-white z-20">
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 }}
-                  className="flex items-center gap-3 mb-3"
+                  className="flex items-center gap-3 mb-4"
                 >
                   <div className="w-8 h-[1px] bg-white/50" />
-                  <span className="text-[9px] font-black uppercase tracking-[0.5em] text-white/80">
+                  <span className="text-[9px] font-black uppercase tracking-[0.5em] text-white/90">
                     EDITION 2025
                   </span>
                 </motion.div>
@@ -102,14 +116,19 @@ export const LandingPage = ({ onShopNow }: LandingPageProps) => {
             </motion.div>
           </AnimatePresence>
 
-          {/* Slider Indicators - Absolute vertical right */}
-          <div className="absolute right-10 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-4 z-30">
+          {/* Slider Indicators */}
+          <div className="absolute right-10 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-6 z-30">
             {HERO_IMAGES.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => setCurrentImage(idx)}
-                className={`w-[2px] transition-all duration-700 ${idx === currentImage ? 'h-12 bg-white' : 'h-4 bg-white/20 hover:bg-white/50'}`}
-              />
+                className="group flex items-center gap-4 focus:outline-none"
+              >
+                <span className={`text-[10px] font-bold transition-opacity duration-500 ${idx === currentImage ? 'opacity-100 text-white' : 'opacity-0 text-white/50'}`}>
+                  0{idx + 1}
+                </span>
+                <div className={`w-[2px] transition-all duration-700 ${idx === currentImage ? 'h-10 bg-white' : 'h-4 bg-white/30 group-hover:bg-white/60'}`} />
+              </button>
             ))}
           </div>
         </div>

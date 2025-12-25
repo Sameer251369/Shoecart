@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, CreditCard, Loader2, MapPin, ShieldCheck, CheckCircle, XCircle } from 'lucide-react';
 
-
 interface CheckoutProps {
   cartItems: any[];
   total: number;
@@ -9,6 +8,11 @@ interface CheckoutProps {
   onOrderSuccess: () => void;
   onBack: () => void;
 }
+
+/**
+ * UPDATED: Uses HTTPS and checks for Netlify Environment Variables.
+ */
+const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'https://shoecart-backend1.onrender.com';
 
 export const CheckoutPage = ({ cartItems, total, token, onOrderSuccess, onBack }: CheckoutProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -20,9 +24,15 @@ export const CheckoutPage = ({ cartItems, total, token, onOrderSuccess, onBack }
   const finalTotal = total * 1.18;
 
   const handlePlaceOrder = async () => {
-    if (!address.street || !address.phone) {
-      setNotification({ type: 'error', message: 'Please fill in shipping details' });
+    // Basic Validation
+    if (!address.street || !address.phone || !address.city) {
+      setNotification({ type: 'error', message: 'Please fill in all shipping details' });
       setTimeout(() => setNotification({ type: null, message: '' }), 3000);
+      return;
+    }
+
+    if (!token) {
+      setNotification({ type: 'error', message: 'You must be logged in to place an order' });
       return;
     }
 
@@ -30,21 +40,25 @@ export const CheckoutPage = ({ cartItems, total, token, onOrderSuccess, onBack }
     setNotification({ type: 'loading', message: 'Processing order...' });
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/orders/create/', {
+      // FIXED: Added backticks and API_BASE_URL with correct https protocol
+      const response = await fetch(`${API_BASE_URL}/api/orders/create/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          amount: finalTotal,
+          amount: finalTotal.toFixed(2), // Send as string/decimal for backend
           items: cartItems.map((item) => ({
             product_id: item.id,
             quantity: item.quantity
           })),
-          address: `${address.street}, ${address.city}`
+          address: `${address.street}, ${address.city}`,
+          phone: address.phone
         })
       });
+
+      const data = await response.json();
 
       if (response.ok) {
         setNotification({ type: 'success', message: 'Order Placed Successfully!' });
@@ -52,12 +66,12 @@ export const CheckoutPage = ({ cartItems, total, token, onOrderSuccess, onBack }
           onOrderSuccess();
         }, 1500);
       } else {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to place order');
+        throw new Error(data.error || data.detail || 'Failed to place order');
       }
     } catch (err: any) {
-      setNotification({ type: 'error', message: err.message });
-      setTimeout(() => setNotification({ type: null, message: '' }), 3000);
+      console.error("Order Error:", err);
+      setNotification({ type: 'error', message: err.message || "Unable to connect to server" });
+      setTimeout(() => setNotification({ type: null, message: '' }), 4000);
     } finally {
       setIsProcessing(false);
     }
@@ -187,23 +201,8 @@ export const CheckoutPage = ({ cartItems, total, token, onOrderSuccess, onBack }
             <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm sticky top-32">
               <h3 className="text-lg font-semibold text-zinc-900 mb-6">Order Summary</h3>
               
-              {/* Cart Items */}
-              <div className="space-y-3 mb-6 max-h-60 overflow-y-auto">
-                {cartItems.map((item) => (
-                  <div key={item.id} className="flex justify-between items-start gap-3 pb-3 border-b border-zinc-100 last:border-0">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-zinc-900 truncate">{item.name}</p>
-                      <p className="text-xs text-zinc-500 mt-0.5">Qty: {item.quantity}</p>
-                    </div>
-                    <span className="text-sm font-semibold text-zinc-900 whitespace-nowrap">
-                      ₹{(parseFloat(item.price) * item.quantity).toFixed(2)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
               {/* Price Breakdown */}
-              <div className="space-y-3 py-4 border-t border-zinc-200">
+              <div className="space-y-3 py-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-zinc-600">Subtotal</span>
                   <span className="font-medium text-zinc-900">₹{subtotal.toFixed(2)}</span>

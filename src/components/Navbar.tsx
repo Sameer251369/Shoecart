@@ -1,4 +1,4 @@
-import { Search, User, LogOut, ShoppingBag, X } from 'lucide-react';
+import { Search, User, LogOut, ShoppingBag, X, Package } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 
@@ -16,6 +16,12 @@ interface NavbarProps {
   setView: (view: 'home' | 'checkout' | 'orders') => void;
 }
 
+/**
+ * PRODUCTION URL REFERENCE:
+ * All data fetched via this Navbar (like categories) flows from:
+ * https://shoecart-backend1.onrender.com
+ */
+
 export const Navbar = ({ 
   token, username, cartCount, categories, activeCategory,
   onAuthOpen, onLogout, onCartOpen, onSearch, onCategorySelect, setView 
@@ -27,7 +33,7 @@ export const Navbar = ({
     e.preventDefault();
     onSearch(searchInput);
     setShowMobileSearch(false);
-    // Smooth scroll to product section
+    // Smooth scroll to product section on the live site
     window.scrollTo({ top: 700, behavior: 'smooth' });
   };
 
@@ -81,24 +87,41 @@ export const Navbar = ({
             )}
           </button>
 
-          <div
-            className="flex items-center gap-2 cursor-pointer group"
-            onClick={() => token ? setView('orders') : onAuthOpen()}
-          >
-            <User className="w-5 h-5 stroke-[1.5]" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] hidden lg:block">
-              {token ? username : 'Sign In'}
-            </span>
+          {/* User Account / Orders Section */}
+          <div className="flex items-center gap-3">
+            <div
+              className="flex items-center gap-2 cursor-pointer group"
+              onClick={() => token ? setView('orders') : onAuthOpen()}
+            >
+              <User className="w-5 h-5 stroke-[1.5]" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] hidden lg:block">
+                {token ? username : 'Sign In'}
+              </span>
+            </div>
+
             {token && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onLogout(); }}
-                className="ml-1 text-zinc-300 hover:text-red-500 transition-colors hidden lg:block"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-3 ml-2 border-l border-zinc-200 pl-3">
+                {/* Orders Icon Shortcut */}
+                <button 
+                  onClick={() => setView('orders')}
+                  className="text-zinc-400 hover:text-black transition-colors"
+                  title="My Orders"
+                >
+                  <Package className="w-5 h-5 stroke-[1.5]" />
+                </button>
+                
+                <button
+                  onClick={(e) => { e.stopPropagation(); onLogout(); }}
+                  className="text-zinc-300 hover:text-red-500 transition-colors"
+                  title="Logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
             )}
           </div>
 
+          {/* Cart Icon */}
           <div className="relative cursor-pointer group" onClick={onCartOpen}>
             <ShoppingBag className="w-5 h-5 stroke-[1.5] group-hover:scale-110 transition-transform" />
             <AnimatePresence mode="wait">
@@ -152,11 +175,15 @@ export const Navbar = ({
         )}
       </AnimatePresence>
 
-      {/* CATEGORY BAR */}
+      {/* CATEGORY BAR - Connects to https://shoecart-backend1.onrender.com */}
       <div className="bg-white/90 backdrop-blur-md border-b border-zinc-100 overflow-x-auto scrollbar-hide">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4 flex gap-6 md:gap-10 justify-start md:justify-center min-w-max">
           <button 
-            onClick={() => { onCategorySelect(''); window.scrollTo({ top: 700, behavior: 'smooth' }); }}
+            onClick={() => { 
+              onCategorySelect(''); 
+              setView('home'); // Ensure we are on home when switching categories
+              window.scrollTo({ top: 700, behavior: 'smooth' }); 
+            }}
             className={`text-[9px] font-bold uppercase tracking-[0.25em] transition-all relative pb-1 whitespace-nowrap ${
               activeCategory === '' ? 'text-black' : 'text-zinc-400 hover:text-zinc-600'
             }`}
@@ -167,7 +194,11 @@ export const Navbar = ({
           {categories.map((cat) => (
             <button 
               key={cat.id}
-              onClick={() => { onCategorySelect(cat.slug); window.scrollTo({ top: 700, behavior: 'smooth' }); }}
+              onClick={() => { 
+                onCategorySelect(cat.slug); 
+                setView('home'); 
+                window.scrollTo({ top: 700, behavior: 'smooth' }); 
+              }}
               className={`text-[9px] font-bold uppercase tracking-[0.25em] transition-all relative pb-1 whitespace-nowrap ${
                 activeCategory === cat.slug ? 'text-black' : 'text-zinc-400 hover:text-zinc-600'
               }`}
