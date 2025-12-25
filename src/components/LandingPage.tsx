@@ -17,6 +17,8 @@ export const LandingPage = ({ onShopNow }: LandingPageProps) => {
   const [currentImage, setCurrentImage] = useState(0);
 
   useEffect(() => {
+    if (HERO_IMAGES.length <= 1) return;
+    
     const timer = setInterval(() => {
       setCurrentImage((prev) => (prev + 1) % HERO_IMAGES.length);
     }, 5000);
@@ -82,6 +84,7 @@ export const LandingPage = ({ onShopNow }: LandingPageProps) => {
               <motion.img 
                 src={HERO_IMAGES[currentImage]} 
                 className="w-full h-full object-cover"
+                loading="eager"
                 initial={{ scale: 1.2 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 8, ease: "linear" }}

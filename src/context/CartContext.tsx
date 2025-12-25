@@ -1,12 +1,13 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { toast } from 'react-hot-toast';
 
 interface CartItem {
   id: number;
   name: string;
-  price: number; // Changed to number for cleaner math
+  price: number;
   image: string;
   quantity: number;
-  stock: number; // Added to prevent over-ordering
+  stock: number;
 }
 
 interface CartContextType {
@@ -22,35 +23,43 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
-  // Load initial state from LocalStorage so cart persists on refresh
+  // Initialize from LocalStorage
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    if (typeof window === 'undefined') return []; // Safety check for SSR
     const saved = localStorage.getItem('stridezone_cart');
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Save to LocalStorage whenever cart changes
+  // Sync to LocalStorage
   useEffect(() => {
     localStorage.setItem('stridezone_cart', JSON.stringify(cartItems));
   }, [cartItems]);
 
-  // Calculations
-  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  
-  // High-accuracy math: use parseFloat then round to 2 decimals
-  const cartTotal = cartItems.reduce((sum, item) => {
-    return sum + (item.price * item.quantity);
-  }, 0);
+  // Performance Optimization: Only recalculate when items change
+  const cartCount = useMemo(() => 
+    cartItems.reduce((sum, item) => sum + item.quantity, 0), 
+  [cartItems]);
+
+  const cartTotal = useMemo(() => 
+    cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0), 
+  [cartItems]);
 
   const addToCart = (product: any) => {
     setCartItems(prev => {
       const existing = prev.find(item => item.id === product.id);
+      
       if (existing) {
-        // Limit based on stock
-        if (existing.quantity >= product.stock) return prev;
+        if (existing.quantity >= product.stock) {
+          toast.error("Maximum stock reached");
+          return prev;
+        }
+        toast.success(`Another ${product.name} added to bag`);
         return prev.map(item =>
           item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
+
+      toast.success(`${product.name} added to bag`);
       return [...prev, { 
         id: product.id, 
         name: product.name, 
@@ -66,8 +75,10 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setCartItems(prev => prev.map(item => {
       if (item.id === productId) {
         const newQty = item.quantity + delta;
-        // Prevent going below 1 or above stock
-        if (newQty < 1 || newQty > item.stock) return item;
+        if (newQty < 1 || newQty > item.stock) {
+          if (newQty > item.stock) toast.error("Out of stock");
+          return item;
+        }
         return { ...item, quantity: newQty };
       }
       return item;
@@ -76,6 +87,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   const removeFromCart = (productId: number) => {
     setCartItems(prev => prev.filter(item => item.id !== productId));
+    toast.dismiss();
+    toast("Item removed", { icon: '🗑️' });
   };
 
   const clearCart = () => setCartItems([]);

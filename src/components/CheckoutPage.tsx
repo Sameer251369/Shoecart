@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { ArrowLeft, CreditCard, Loader2, MapPin, ShieldCheck, CheckCircle, XCircle } from 'lucide-react';
 
 interface CheckoutProps {
@@ -9,22 +9,19 @@ interface CheckoutProps {
   onBack: () => void;
 }
 
-/**
- * UPDATED: Uses HTTPS and checks for Netlify Environment Variables.
- */
-const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'https://shoecart-backend1.onrender.com';
+// Clean API URL logic to ensure no double slashes in production
+const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '').replace(/\/+$/, '') || 'https://shoecart-backend1.onrender.com';
 
 export const CheckoutPage = ({ cartItems, total, token, onOrderSuccess, onBack }: CheckoutProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [address, setAddress] = useState({ street: '', city: '', phone: '' });
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'loading' | null, message: string }>({ type: null, message: '' });
 
-  const subtotal = total;
-  const gst = total * 0.18;
-  const finalTotal = total * 1.18;
+  const subtotal = Number(total) || 0;
+  const gst = subtotal * 0.18;
+  const finalTotal = subtotal + gst;
 
   const handlePlaceOrder = async () => {
-    // Basic Validation
     if (!address.street || !address.phone || !address.city) {
       setNotification({ type: 'error', message: 'Please fill in all shipping details' });
       setTimeout(() => setNotification({ type: null, message: '' }), 3000);
@@ -40,7 +37,6 @@ export const CheckoutPage = ({ cartItems, total, token, onOrderSuccess, onBack }
     setNotification({ type: 'loading', message: 'Processing order...' });
 
     try {
-      // FIXED: Added backticks and API_BASE_URL with correct https protocol
       const response = await fetch(`${API_BASE_URL}/api/orders/create/`, {
         method: 'POST',
         headers: {
@@ -48,7 +44,7 @@ export const CheckoutPage = ({ cartItems, total, token, onOrderSuccess, onBack }
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          amount: finalTotal.toFixed(2), // Send as string/decimal for backend
+          amount: finalTotal.toFixed(2),
           items: cartItems.map((item) => ({
             product_id: item.id,
             quantity: item.quantity
@@ -79,7 +75,6 @@ export const CheckoutPage = ({ cartItems, total, token, onOrderSuccess, onBack }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-white pt-32 pb-20 px-4 md:px-8">
-      {/* Custom Notification Toast */}
       {notification.type && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top">
           <div className={`flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg ${
@@ -114,10 +109,7 @@ export const CheckoutPage = ({ cartItems, total, token, onOrderSuccess, onBack }
         <p className="text-zinc-500 mb-12">Complete your purchase</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Forms */}
           <div className="lg:col-span-2 space-y-6">
-            
-            {/* Shipping Information */}
             <div className="bg-white rounded-2xl border border-zinc-200 p-6 md:p-8 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-zinc-900 rounded-lg flex items-center justify-center">
@@ -164,7 +156,6 @@ export const CheckoutPage = ({ cartItems, total, token, onOrderSuccess, onBack }
               </div>
             </div>
 
-            {/* Payment Method */}
             <div className="bg-white rounded-2xl border border-zinc-200 p-6 md:p-8 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-zinc-900 rounded-lg flex items-center justify-center">
@@ -193,15 +184,12 @@ export const CheckoutPage = ({ cartItems, total, token, onOrderSuccess, onBack }
                 </div>
               </div>
             </div>
-
           </div>
 
-          {/* Right Column - Order Summary */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm sticky top-32">
               <h3 className="text-lg font-semibold text-zinc-900 mb-6">Order Summary</h3>
               
-              {/* Price Breakdown */}
               <div className="space-y-3 py-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-zinc-600">Subtotal</span>
@@ -217,13 +205,11 @@ export const CheckoutPage = ({ cartItems, total, token, onOrderSuccess, onBack }
                 </div>
               </div>
 
-              {/* Total */}
               <div className="flex justify-between items-baseline pt-4 border-t-2 border-zinc-900 mb-6">
                 <span className="text-base font-semibold text-zinc-900">Total</span>
                 <span className="text-2xl font-bold text-zinc-900">₹{finalTotal.toFixed(2)}</span>
               </div>
 
-              {/* Place Order Button */}
               <button 
                 onClick={handlePlaceOrder}
                 disabled={isProcessing}
@@ -235,9 +221,7 @@ export const CheckoutPage = ({ cartItems, total, token, onOrderSuccess, onBack }
                     Processing...
                   </>
                 ) : (
-                  <>
-                    Place Order
-                  </>
+                  "Place Order"
                 )}
               </button>
 

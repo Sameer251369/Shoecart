@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, ArrowRight } from 'lucide-react';
 
@@ -8,11 +8,8 @@ interface AuthModalProps {
   setToken: (token: string) => void; 
 }
 
-/**
- * UPDATED: Uses HTTPS and checks for Netlify Environment Variables.
- * This matches the logic in your App.tsx.
- */
-const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'https://shoecart-backend1.onrender.com';
+// Ensure the URL is clean and defaults to your Render backend
+const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '').replace(/\/+$/, '') || 'https://shoecart-backend1.onrender.com';
 
 export const AuthModal = ({ isOpen, onClose, setToken }: AuthModalProps) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -27,11 +24,6 @@ export const AuthModal = ({ isOpen, onClose, setToken }: AuthModalProps) => {
 
     const endpoint = isLogin ? '/api/token/' : '/api/register/';
     
-    /**
-     * UPDATED: Construction of the payload.
-     * For login, we send the email inside the 'username' key because 
-     * SimpleJWT looks for 'username' by default.
-     */
     const payload = isLogin
       ? {
           username: formData.email.toLowerCase().trim(),
@@ -44,7 +36,6 @@ export const AuthModal = ({ isOpen, onClose, setToken }: AuthModalProps) => {
         };
 
     try {
-      // FIXED: Added backticks and the API_BASE_URL variable with the correct protocol
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -63,7 +54,6 @@ export const AuthModal = ({ isOpen, onClose, setToken }: AuthModalProps) => {
           setError("Account created! Please sign in.");
         }
       } else {
-        // Parse Django's nested error format
         const errorMsg = data.detail || 
                          (data.non_field_errors ? data.non_field_errors[0] : null) ||
                          (data.email ? `Email: ${data.email[0]}` : null) || 

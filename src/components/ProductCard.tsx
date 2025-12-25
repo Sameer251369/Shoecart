@@ -17,14 +17,14 @@ export const ProductCard = ({ product, onAddToCart, onOpenDetail }: ProductCardP
   
   const formatImageUrl = (path?: string) => {
     if (!path) return '';
-    // If it's already a full URL (Cloudinary/S3), use it
     if (path.startsWith('http')) return path;
-    // Otherwise, append the production Render URL, ensuring no double slashes
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
     return `${API_BASE_URL}${cleanPath}`;
   };
 
   const isOutOfStock = product.stock <= 0;
+  // Ensure price is a valid number for formatting
+  const priceDisplay = product.price ? parseFloat(product.price).toLocaleString('en-IN') : '0';
 
   return (
     <motion.div
@@ -32,7 +32,7 @@ export const ProductCard = ({ product, onAddToCart, onOpenDetail }: ProductCardP
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5 }}
-      className="group relative flex flex-col w-full bg-white border border-transparent hover:border-zinc-100 transition-colors duration-300"
+      className="group relative flex flex-col w-full bg-white border border-transparent hover:border-zinc-100 transition-all duration-300"
     >
       {/* Image Container */}
       <div 
@@ -42,7 +42,7 @@ export const ProductCard = ({ product, onAddToCart, onOpenDetail }: ProductCardP
         {product.images && product.images.length > 0 ? (
           <img
             src={formatImageUrl(product.images[0]?.image)}
-            alt={product.name}
+            alt={product.images[0]?.alt_text || product.name}
             loading="lazy"
             className="w-full h-full object-contain p-6 mix-blend-multiply transition-transform duration-[1.5s] ease-out group-hover:scale-110"
           />
@@ -52,12 +52,12 @@ export const ProductCard = ({ product, onAddToCart, onOpenDetail }: ProductCardP
           </div>
         )}
 
-        {/* Desktop Quick Add (Slides up on hover) */}
+        {/* Desktop Quick Add */}
         {!isOutOfStock && (
-          <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out hidden md:block">
+          <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out hidden md:block z-10">
             <button
               onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
-              className="w-full bg-black text-white py-4 text-[9px] font-black uppercase tracking-[0.4em] flex items-center justify-center gap-3 hover:bg-zinc-800 transition-all active:scale-95"
+              className="w-full bg-black text-white py-4 text-[9px] font-black uppercase tracking-[0.4em] flex items-center justify-center gap-3 hover:bg-zinc-800 transition-all active:scale-95 shadow-xl"
             >
               <ShoppingBag className="w-3 h-3" />
               Quick Add
@@ -66,8 +66,8 @@ export const ProductCard = ({ product, onAddToCart, onOpenDetail }: ProductCardP
         )}
         
         {isOutOfStock && (
-          <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 border border-zinc-200 px-4 py-2">
+          <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 border border-zinc-200 px-4 py-2 bg-white/80">
               Sold Out
             </span>
           </div>
@@ -75,23 +75,23 @@ export const ProductCard = ({ product, onAddToCart, onOpenDetail }: ProductCardP
       </div>
 
       {/* Product Info */}
-      <div className="px-1 pb-4 flex flex-col">
+      <div className="px-1 pb-4 flex flex-col flex-grow">
         <div className="flex flex-col gap-1 cursor-pointer" onClick={() => onOpenDetail?.(product)}>
-          <div className="flex justify-between items-start">
-             <div>
+          <div className="flex justify-between items-start gap-2">
+             <div className="flex-1">
                <h3 className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-400 mb-1">StrideZone Edit</h3>
-               <h4 className="text-xs md:text-[13px] font-bold uppercase tracking-tight text-zinc-900 group-hover:text-zinc-500 transition-colors leading-tight">
+               <h4 className="text-xs md:text-[13px] font-bold uppercase tracking-tight text-zinc-900 group-hover:text-zinc-500 transition-colors leading-tight line-clamp-2">
                 {product.name}
                </h4>
              </div>
-             <span className="text-xs md:text-sm font-black text-zinc-900">
-               ₹{parseFloat(product.price).toLocaleString('en-IN')}
+             <span className="text-xs md:text-sm font-black text-zinc-900 whitespace-nowrap">
+               ₹{priceDisplay}
              </span>
           </div>
         </div>
 
         {/* Status Indicator */}
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-auto pt-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className={`w-1.5 h-1.5 rounded-full ${isOutOfStock ? 'bg-red-400' : 'bg-green-400'}`} />
             <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400">

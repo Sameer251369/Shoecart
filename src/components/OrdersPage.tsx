@@ -1,17 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Search, Truck, CheckCircle, XCircle, Clock, PackageOpen, ChevronLeft } from 'lucide-react';
+import { Truck, CheckCircle, XCircle, Clock, PackageOpen, ChevronLeft } from 'lucide-react';
 
 interface OrdersPageProps {
   token: string | null;
-  onBack: () => void; // Added this to match App.tsx
+  onBack: () => void;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'https://shoecart-backend1.onrender.com';
+const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '').replace(/\/+$/, '') || 'https://shoecart-backend1.onrender.com';
 
 export const OrdersPage = ({ token, onBack }: OrdersPageProps) => {
-  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
   const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
 
   useEffect(() => {
@@ -26,7 +24,6 @@ export const OrdersPage = ({ token, onBack }: OrdersPageProps) => {
     .then(res => res.json())
     .then(data => { 
       const ordersList = Array.isArray(data) ? data : (data.results || []);
-      setOrders(ordersList); 
       setFilteredOrders(ordersList);
       setLoading(false); 
     })
@@ -62,7 +59,6 @@ export const OrdersPage = ({ token, onBack }: OrdersPageProps) => {
   return (
     <div className="min-h-screen bg-[#f8f8f8] pt-32 pb-20 px-4 md:px-12">
       <div className="max-w-7xl mx-auto">
-        {/* Navigation Header */}
         <button 
           onClick={onBack}
           className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-black transition-colors mb-8"
@@ -74,13 +70,13 @@ export const OrdersPage = ({ token, onBack }: OrdersPageProps) => {
           <aside className="w-full md:w-64 space-y-8">
             <h1 className="text-4xl font-black uppercase italic tracking-tighter">My Orders</h1>
             <div className="bg-white p-6 border border-zinc-200">
-               <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-4">Filter By</p>
-               {['On the way', 'Delivered', 'Cancelled'].map(s => (
-                <label key={s} className="flex items-center gap-3 mb-3 cursor-pointer">
-                  <input type="checkbox" className="w-4 h-4 rounded-none border-zinc-300 accent-black" />
-                  <span className="text-[10px] font-bold uppercase">{s}</span>
-                </label>
-              ))}
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-4">Filter By</p>
+                {['On the way', 'Delivered', 'Cancelled'].map(s => (
+                 <label key={s} className="flex items-center gap-3 mb-3 cursor-pointer">
+                   <input type="checkbox" className="w-4 h-4 rounded-none border-zinc-300 accent-black" />
+                   <span className="text-[10px] font-bold uppercase">{s}</span>
+                 </label>
+               ))}
             </div>
           </aside>
 
@@ -100,7 +96,7 @@ export const OrdersPage = ({ token, onBack }: OrdersPageProps) => {
                       <span className="text-sm font-black">₹{parseFloat(order.total_price || 0).toLocaleString('en-IN')}</span>
                     </div>
                     {order.items.map((item: any, idx: number) => (
-                      <div key={idx} className="flex gap-6 items-center">
+                      <div key={idx} className="flex gap-6 items-center mb-4 last:mb-0">
                         <img src={getItemImage(item)} className="w-16 h-16 object-contain bg-zinc-50 p-2" alt="" />
                         <div className="flex-1">
                           <p className="text-xs font-black uppercase">{getItemName(item)}</p>

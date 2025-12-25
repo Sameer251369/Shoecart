@@ -18,8 +18,8 @@ interface PaymentModalProps {
   onSuccess: () => void;
 }
 
-// PRODUCTION URL: Connects directly to your Render instance
-const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'https://shoecart-backend1.onrender.com';
+// Ensure no trailing slashes or /api duplicates
+const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '').replace(/\/+$/, '') || 'https://shoecart-backend1.onrender.com';
 
 export const PaymentModal = ({ isOpen, onClose, total, token, items, onSuccess }: PaymentModalProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -35,7 +35,6 @@ export const PaymentModal = ({ isOpen, onClose, total, token, items, onSuccess }
     setError(null);
 
     try {
-      // Sending order data to Render backend
       const response = await fetch(`${API_BASE_URL}/api/orders/create/`, {
         method: 'POST',
         headers: {
@@ -43,11 +42,14 @@ export const PaymentModal = ({ isOpen, onClose, total, token, items, onSuccess }
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          amount: total,
+          amount: total.toFixed(2), // Backend usually prefers fixed decimals
           items: items.map(item => ({ 
             product_id: item.id, 
             quantity: item.quantity 
           })),
+          // Adding a placeholder address/phone as your backend model likely requires them
+          address: "Digital Payment", 
+          phone: "0000000000"
         }),
       });
 
@@ -57,15 +59,13 @@ export const PaymentModal = ({ isOpen, onClose, total, token, items, onSuccess }
         throw new Error(result.error || result.detail || 'Payment declined by provider.');
       }
 
-      // Success sequence
       setIsDone(true);
       
-      // Give the user a moment to feel the "Success" state
       setTimeout(() => {
-        onSuccess(); // Clears cart
+        onSuccess(); 
         onClose();
         setIsDone(false);
-      }, 3000);
+      }, 2500);
 
     } catch (err: any) {
       console.error("Order Creation Error:", err);
@@ -96,10 +96,10 @@ export const PaymentModal = ({ isOpen, onClose, total, token, items, onSuccess }
                 <>
                   <div className="flex justify-between items-start mb-10">
                     <div>
-                      <h2 className="text-3xl font-[1000] italic uppercase tracking-tighter leading-none">Checkout</h2>
+                      <h2 className="text-3xl font-[1000] italic uppercase tracking-tighter leading-none">Secure Pay</h2>
                       <div className="flex items-center gap-2 mt-2">
                         <Lock className="w-3 h-3 text-green-500" />
-                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">End-to-end encrypted</span>
+                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Encrypted Session</span>
                       </div>
                     </div>
                     {!isProcessing && (
@@ -111,11 +111,11 @@ export const PaymentModal = ({ isOpen, onClose, total, token, items, onSuccess }
 
                   <div className="mb-8 p-6 bg-zinc-50 rounded-3xl border border-zinc-100 flex justify-between items-center">
                     <div>
-                      <p className="text-[10px] uppercase tracking-[0.3em] font-black text-zinc-400 mb-1">Due Today</p>
+                      <p className="text-[10px] uppercase tracking-[0.3em] font-black text-zinc-400 mb-1">Total</p>
                       <p className="text-4xl font-[1000] italic tracking-tighter">₹{total.toLocaleString('en-IN')}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{items.length} Products</p>
+                      <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{items.length} Items</p>
                     </div>
                   </div>
 
@@ -133,7 +133,7 @@ export const PaymentModal = ({ isOpen, onClose, total, token, items, onSuccess }
                       <label className="text-[10px] uppercase font-black tracking-[0.2em] text-zinc-500 px-1">Card Details</label>
                       <div className="relative">
                         <input 
-                          type="text" placeholder="Card Number" 
+                          type="text" placeholder="0000 0000 0000 0000" 
                           className="w-full px-6 py-5 bg-zinc-50 border border-zinc-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-black/5 outline-none transition-all font-mono text-sm"
                           required
                           disabled={isProcessing}
@@ -157,7 +157,7 @@ export const PaymentModal = ({ isOpen, onClose, total, token, items, onSuccess }
                           <span>Authorizing</span>
                         </div>
                       ) : (
-                        "Confirm Payment"
+                        "Confirm Order"
                       )}
                     </button>
                   </form>
@@ -169,7 +169,7 @@ export const PaymentModal = ({ isOpen, onClose, total, token, items, onSuccess }
                   </div>
                   <h2 className="text-4xl font-[1000] italic uppercase tracking-tighter mb-4">Success</h2>
                   <p className="text-zinc-500 text-sm max-w-[240px] leading-relaxed">
-                    Your order has been logged at <span className="font-bold">StrideZone</span>. Redirecting to your dashboard...
+                    Your order has been logged at <span className="font-bold text-black">StrideZone</span>.
                   </p>
                 </motion.div>
               )}
@@ -177,7 +177,7 @@ export const PaymentModal = ({ isOpen, onClose, total, token, items, onSuccess }
             
             <div className="p-6 bg-zinc-50 border-t border-zinc-100 flex items-center justify-center gap-2">
                <ShieldCheck className="w-4 h-4 text-zinc-400" />
-               <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">StrideZone Secure Checkout</span>
+               <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Verified Secure Checkout</span>
             </div>
           </motion.div>
         </div>
