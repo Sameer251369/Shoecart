@@ -79,11 +79,16 @@ function App() {
     toast.success("Logged out");
   };
 
-  const formatImageUrl = (path?: string) => {
-    if (!path) return '/placeholder-shoe.png'; 
-    if (path.startsWith('http')) return path;
-    return `${DJANGO_URL}${path.startsWith('/') ? path : `/${path}`}`;
-  };
+const formatImageUrl = (path?: string) => {
+  if (!path) return '/placeholder-shoe.png'; 
+  const cleanPath = path.trim();
+  // If Cloudinary already gave us a full URL, don't touch it!
+  if (cleanPath.startsWith('http')) return cleanPath;
+  
+  // Only append DJANGO_URL for local media files
+  const formattedPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+  return `${DJANGO_URL}${formattedPath}`;
+};
 
   return (
     <div className="min-h-screen bg-white text-black antialiased font-sans">

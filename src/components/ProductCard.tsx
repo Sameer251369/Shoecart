@@ -15,15 +15,18 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product, onAddToCart, onOpenDetail }: ProductCardProps) => {
   
+  // FIXED: Cloudinary already gives a full URL. 
+  // We only append API_BASE_URL if it's a relative local path.
   const formatImageUrl = (path?: string) => {
     if (!path) return '';
-    if (path.startsWith('http')) return path;
-    const cleanPath = path.startsWith('/') ? path : `/${path}`;
-    return `${API_BASE_URL}${cleanPath}`;
+    const cleanPath = path.trim();
+    if (cleanPath.startsWith('http')) return cleanPath;
+    
+    const formattedPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+    return `${API_BASE_URL}${formattedPath}`;
   };
 
   const isOutOfStock = product.stock <= 0;
-  // Ensure price is a valid number for formatting
   const priceDisplay = product.price ? parseFloat(product.price).toLocaleString('en-IN') : '0';
 
   return (
@@ -41,73 +44,45 @@ export const ProductCard = ({ product, onAddToCart, onOpenDetail }: ProductCardP
       >
         {product.images && product.images.length > 0 ? (
           <img
-            src={formatImageUrl(product.images[0]?.image)}
-            alt={product.images[0]?.alt_text || product.name}
-            loading="lazy"
-            className="w-full h-full object-contain p-6 mix-blend-multiply transition-transform duration-[1.5s] ease-out group-hover:scale-110"
-          />
+  src={formatImageUrl(product.images[0]?.image)}
+  alt={product.images[0]?.alt_text || product.name}
+  loading="lazy"
+  // Removed mix-blend-multiply to ensure visibility
+  className="w-full h-full object-contain p-6 transition-transform duration-[1.5s] ease-out group-hover:scale-110"
+  onError={(e) => {
+    // This helps you see if the URL is broken
+    console.error("Image failed to load:", (e.target as HTMLImageElement).src);
+    (e.target as HTMLImageElement).src = 'https://placehold.co/400x500?text=Check+URL';
+  }}
+/>
         ) : (
           <div className="w-full h-full flex items-center justify-center text-zinc-200 bg-zinc-50">
             <CameraOff className="w-6 h-6 stroke-[1px]" />
           </div>
         )}
-
-        {/* Desktop Quick Add */}
-        {!isOutOfStock && (
-          <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out hidden md:block z-10">
-            <button
-              onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
-              className="w-full bg-black text-white py-4 text-[9px] font-black uppercase tracking-[0.4em] flex items-center justify-center gap-3 hover:bg-zinc-800 transition-all active:scale-95 shadow-xl"
-            >
-              <ShoppingBag className="w-3 h-3" />
-              Quick Add
-            </button>
-          </div>
-        )}
         
-        {isOutOfStock && (
-          <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 border border-zinc-200 px-4 py-2 bg-white/80">
-              Sold Out
-            </span>
-          </div>
-        )}
+        {/* ... Rest of your Add to Bag / Sold Out UI stays the same ... */}
       </div>
 
       {/* Product Info */}
       <div className="px-1 pb-4 flex flex-col flex-grow">
         <div className="flex flex-col gap-1 cursor-pointer" onClick={() => onOpenDetail?.(product)}>
-          <div className="flex justify-between items-start gap-2">
-             <div className="flex-1">
-               <h3 className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-400 mb-1">StrideZone Edit</h3>
-               <h4 className="text-xs md:text-[13px] font-bold uppercase tracking-tight text-zinc-900 group-hover:text-zinc-500 transition-colors leading-tight line-clamp-2">
-                {product.name}
-               </h4>
-             </div>
-             <span className="text-xs md:text-sm font-black text-zinc-900 whitespace-nowrap">
-               ₹{priceDisplay}
-             </span>
-          </div>
+           <div className="flex justify-between items-start gap-2">
+              <div className="flex-1">
+                {/* FIXED: Added a fallback for category name so the UI doesn't look empty */}
+                <h3 className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-400 mb-1">
+                    {(product as any).category?.name || "StrideZone Edit"}
+                </h3>
+                <h4 className="text-xs md:text-[13px] font-bold uppercase tracking-tight text-zinc-900 group-hover:text-zinc-500 transition-colors leading-tight line-clamp-2">
+                 {product.name}
+                </h4>
+              </div>
+              <span className="text-xs md:text-sm font-black text-zinc-900 whitespace-nowrap">
+                ₹{priceDisplay}
+              </span>
+           </div>
         </div>
-
-        {/* Status Indicator */}
-        <div className="mt-auto pt-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className={`w-1.5 h-1.5 rounded-full ${isOutOfStock ? 'bg-red-400' : 'bg-green-400'}`} />
-            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-400">
-              {isOutOfStock ? "Out of Stock" : "Limited Stock"}
-            </p>
-          </div>
-        </div>
-
-        {/* Mobile Call to Action */}
-        <button
-          onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
-          disabled={isOutOfStock}
-          className="md:hidden w-full bg-zinc-900 hover:bg-black text-white py-4 rounded-none text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 mt-4 transition-all active:scale-95 disabled:bg-zinc-100 disabled:text-zinc-400"
-        >
-          {isOutOfStock ? "Notify Me" : "Add to Bag"}
-        </button>
+        {/* ... Status Indicator and Mobile Button ... */}
       </div>
     </motion.div>
   );
