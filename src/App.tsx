@@ -103,24 +103,55 @@ function App() {
       />
 
       <AnimatePresence mode="wait">
-        {view === 'home' && (
-          <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <LandingPage onShopNow={() => productsSectionRef.current?.scrollIntoView({ behavior: 'smooth' })} />
-            <main ref={productsSectionRef} className="px-6 md:px-12 pt-32 pb-32 max-w-7xl mx-auto">
-              <header className="mb-16">
-                <h2 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase">
-                  {searchQuery ? searchQuery : activeCategory ? activeCategory : 'New Arrivals'}
-                </h2>
-              </header>
-              <ProductGrid 
-                isLoading={isLoading} 
-                products={products} 
-                onAddToCart={(p) => { if(!token) return setIsAuthOpen(true); addToCart(p); if (window.innerWidth > 768) setIsCartOpen(true); }} 
-              />
-            </main>
-          </motion.div>
-        )}
-      </AnimatePresence>
+  {view === 'home' && (
+    <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <LandingPage onShopNow={() => productsSectionRef.current?.scrollIntoView({ behavior: 'smooth' })} />
+      <main ref={productsSectionRef} className="px-6 md:px-12 pt-32 pb-32 max-w-7xl mx-auto">
+        <header className="mb-16">
+          <h2 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase">
+            {searchQuery ? searchQuery : activeCategory ? activeCategory : 'New Arrivals'}
+          </h2>
+        </header>
+        <ProductGrid 
+          isLoading={isLoading} 
+          products={products} 
+          onAddToCart={(p) => { 
+            if (!token) return setIsAuthOpen(true); 
+            addToCart(p); 
+            if (window.innerWidth > 768) setIsCartOpen(true); 
+          }} 
+        />
+      </main>
+    </motion.div>
+  )}
+
+  {view === 'orders' && (
+    <motion.div key="orders" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <OrdersPage 
+        token={token} 
+        onBack={() => setView('home')} 
+      />
+    </motion.div>
+  )}
+
+{view === 'checkout' && (
+  <motion.div key="checkout" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+    <CheckoutPage
+      cartItems={cartItems}
+      total={cartTotal}
+      token={token}
+      onBack={() => setView('home')}
+      onOrderSuccess={() => {
+        clearCart();
+        setView('orders');
+        toast.success('Order placed 🎉');
+      }}
+    />
+  </motion.div>
+)}
+
+</AnimatePresence>
+
 
       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} formatImageUrl={formatImageUrl} onCheckout={() => { setIsCartOpen(false); setView('checkout'); }} />
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} setToken={(t) => { localStorage.setItem('token', t); setToken(t); }} />
