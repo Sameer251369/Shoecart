@@ -12,10 +12,12 @@ import { OrdersPage } from './components/OrdersPage';
 import { Navbar } from './components/Navbar';
 import { useCart } from './context/CartContext';
 
+// Corrected Path: App is in src/, Card is in src/components/
+import type { Product } from './components/ProductCard';
+
+
 const DJANGO_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'https://shoecart-backend1.onrender.com';
 
-export interface ProductImage { id: number; image: string; alt_text: string; }
-export interface Product { id: number; name: string; price: string; stock: number; is_active: boolean; images: ProductImage[]; }
 export interface Category { id: number; name: string; slug: string; }
 
 function App() {
@@ -44,7 +46,7 @@ function App() {
         }
         setUsername(decoded.username || decoded.name || 'Member');
       } catch (err) { handleLogout(); }
-    } else { setUsername(null); }
+    }
   }, [token]);
 
   const fetchProducts = useCallback(async (search = '', category = '') => {
@@ -54,8 +56,11 @@ function App() {
       const response = await fetch(url);
       const data = await response.json();
       setProducts(Array.isArray(data) ? data : data.results || []);
-    } catch (err) { toast.error("Server connection failed."); }
-    finally { setIsLoading(false); }
+    } catch (err) { 
+      toast.error("Server connection failed."); 
+    } finally { 
+      setIsLoading(false); 
+    }
   }, []);
 
   useEffect(() => {
@@ -79,19 +84,14 @@ function App() {
     toast.success("Logged out");
   };
 
-const formatImageUrl = (path?: string) => {
-  if (!path) return '/placeholder-shoe.png'; 
-  const cleanPath = path.trim();
-  // If Cloudinary already gave us a full URL, don't touch it!
-  if (cleanPath.startsWith('http')) return cleanPath;
-  
-  // Only append DJANGO_URL for local media files
-  const formattedPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
-  return `${DJANGO_URL}${formattedPath}`;
-};
+  const formatImageUrl = (path?: string) => {
+    if (!path) return '/placeholder-shoe.png'; 
+    if (path.startsWith('http')) return path;
+    return `${DJANGO_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+  };
 
   return (
-    <div className="min-h-screen bg-white text-black antialiased font-sans">
+    <div className="min-h-screen bg-white text-black antialiased">
       <Toaster position="bottom-center" />
       
       <Navbar 
@@ -113,33 +113,16 @@ const formatImageUrl = (path?: string) => {
                 </h2>
               </header>
               <ProductGrid 
-                isLoading={isLoading} products={products} 
+                isLoading={isLoading} 
+                products={products} 
                 onAddToCart={(p) => { if(!token) return setIsAuthOpen(true); addToCart(p); if (window.innerWidth > 768) setIsCartOpen(true); }} 
               />
             </main>
           </motion.div>
         )}
-
-        {view === 'checkout' && (
-          <motion.div key="checkout" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <CheckoutPage cartItems={cartItems} total={cartTotal} token={token} onBack={() => setView('home')} onOrderSuccess={() => { clearCart(); setView('orders'); }} />
-          </motion.div>
-        )}
-
-        {view === 'orders' && (
-          <motion.div key="orders" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <OrdersPage token={token} onBack={() => setView('home')} />
-          </motion.div>
-        )}
       </AnimatePresence>
 
-      <CartSidebar 
-        isOpen={isCartOpen} 
-        onClose={() => setIsCartOpen(false)} 
-        formatImageUrl={formatImageUrl} 
-        onCheckout={() => { setIsCartOpen(false); setView('checkout'); }} 
-      />
-      
+      <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} formatImageUrl={formatImageUrl} onCheckout={() => { setIsCartOpen(false); setView('checkout'); }} />
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} setToken={(t) => { localStorage.setItem('token', t); setToken(t); }} />
     </div>
   );
