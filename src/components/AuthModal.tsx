@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, ArrowRight } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -8,7 +9,6 @@ interface AuthModalProps {
   setToken: (token: string) => void; 
 }
 
-// Ensure the URL is clean and defaults to your Render backend
 const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '').replace(/\/+$/, '') || 'https://shoecart-backend1.onrender.com';
 
 export const AuthModal = ({ isOpen, onClose, setToken }: AuthModalProps) => {
@@ -22,11 +22,12 @@ export const AuthModal = ({ isOpen, onClose, setToken }: AuthModalProps) => {
     setIsLoading(true);
     setError('');
 
+    // FIXED: Use the correct backend endpoints
     const endpoint = isLogin ? '/api/token/' : '/api/register/';
     
     const payload = isLogin
       ? {
-          username: formData.email.toLowerCase().trim(),
+          email: formData.email.toLowerCase().trim(),
           password: formData.password,
         }
       : {
@@ -48,10 +49,10 @@ export const AuthModal = ({ isOpen, onClose, setToken }: AuthModalProps) => {
         const tokenValue = data.access || data.token;
         if (tokenValue) {
           setToken(tokenValue);
+          toast.success(isLogin ? 'Welcome back!' : 'Account created successfully!');
           onClose();
-        } else if (!isLogin) {
-          setIsLogin(true);
-          setError("Account created! Please sign in.");
+        } else {
+          setError("Authentication failed. Please try again.");
         }
       } else {
         const errorMsg = data.detail || 
@@ -62,7 +63,8 @@ export const AuthModal = ({ isOpen, onClose, setToken }: AuthModalProps) => {
         setError(errorMsg);
       }
     } catch (err) {
-      setError("Unable to connect to the server.");
+      console.error('Auth error:', err);
+      setError("Unable to connect to the server. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -129,7 +131,6 @@ export const AuthModal = ({ isOpen, onClose, setToken }: AuthModalProps) => {
                     type="text" 
                     value={formData.username}
                     placeholder="Display name" 
-                    required 
                     className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-3 px-4 outline-none focus:border-black focus:ring-1 focus:ring-black transition-all text-sm"
                     onChange={(e) => setFormData({...formData, username: e.target.value})}
                   />
@@ -168,6 +169,7 @@ export const AuthModal = ({ isOpen, onClose, setToken }: AuthModalProps) => {
                 onClick={() => {
                   setIsLogin(!isLogin);
                   setError('');
+                  setFormData({ email: '', password: '', username: '' });
                 }} 
                 className="w-full text-sm font-medium text-zinc-500 hover:text-black transition-colors"
               >
