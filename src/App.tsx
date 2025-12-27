@@ -12,9 +12,7 @@ import { OrdersPage } from './components/OrdersPage';
 import { Navbar } from './components/Navbar';
 import { useCart } from './context/CartContext';
 
-// Corrected Path: App is in src/, Card is in src/components/
 import type { Product } from './components/ProductCard';
-
 
 const DJANGO_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'https://shoecart-backend1.onrender.com';
 
@@ -45,19 +43,52 @@ function App() {
           return;
         }
         setUsername(decoded.username || decoded.name || 'Member');
-      } catch (err) { handleLogout(); }
+      } catch (err) { 
+        handleLogout(); 
+      }
     }
   }, [token]);
 
   const fetchProducts = useCallback(async (search = '', category = '') => {
     setIsLoading(true);
     try {
-      const url = `${DJANGO_URL}/api/products/?search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}`;
-      const response = await fetch(url);
+      // Build URL with query parameters
+      let url = `${DJANGO_URL}/api/products/`;
+      const params = new URLSearchParams();
+      
+      if (search) params.append('search', search);
+      if (category) params.append('category', category);
+      
+      if (params.toString()) url += `?${params.toString()}`;
+      
+      console.log('🔍 Fetching products from:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('📡 Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+      
       const data = await response.json();
-      setProducts(Array.isArray(data) ? data : data.results || []);
-    } catch (err) { 
-      toast.error("Server connection failed."); 
+      console.log('✅ Products data received:', data);
+      
+      // Handle both paginated and non-paginated responses
+      const productsArray = Array.isArray(data) ? data : (data.results || []);
+      console.log('📦 Setting products:', productsArray.length, 'items');
+      
+      setProducts(productsArray);
+      
+    } catch (err: any) { 
+      console.error('❌ Fetch error:', err);
+      toast.error("Unable to load products. Please check your connection."); 
+      setProducts([]);
     } finally { 
       setIsLoading(false); 
     }
@@ -66,11 +97,36 @@ function App() {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const catRes = await fetch(`${DJANGO_URL}/api/products/categories/`);
-        setCategories(await catRes.json());
-      } catch (e) { console.error(e); }
-      fetchProducts();
+        // Fetch categories
+        const catUrl = `${DJANGO_URL}/api/products/categories/`;
+        console.log('🔍 Fetching categories from:', catUrl);
+        
+        const catRes = await fetch(catUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (catRes.ok) {
+          const catData = await catRes.json();
+          console.log('✅ Categories received:', catData);
+          
+          // Handle both paginated and non-paginated
+          const categoriesArray = Array.isArray(catData) ? catData : (catData.results || []);
+          setCategories(categoriesArray);
+        } else {
+          console.error('❌ Categories fetch failed:', catRes.status);
+        }
+      } catch (e) { 
+        console.error('❌ Categories error:', e);
+        toast.error("Could not load categories");
+      }
+      
+      // Fetch products
+      await fetchProducts();
     };
+    
     fetchInitialData();
   }, [fetchProducts]);
 
@@ -95,66 +151,118 @@ function App() {
       <Toaster position="bottom-center" />
       
       <Navbar 
-        token={token} username={username} cartCount={cartCount} categories={categories} activeCategory={activeCategory}
-        onAuthOpen={() => setIsAuthOpen(true)} onLogout={handleLogout} onCartOpen={() => setIsCartOpen(true)}
-        onSearch={(q) => { setSearchQuery(q); fetchProducts(q, activeCategory); setView('home'); }} 
-        onCategorySelect={(s) => { const n = activeCategory === s ? '' : s; setActiveCategory(n); fetchProducts(searchQuery, n); setView('home'); }} 
+        token={token} 
+        username={username} 
+        cartCount={cartCount} 
+        categories={categories} 
+        activeCategory={activeCategory}
+        onAuthOpen={() => setIsAuthOpen(true)} 
+        onLogout={handleLogout} 
+        onCartOpen={() => setIsCartOpen(true)}
+        onSearch={(q) => { 
+          setSearchQuery(q); 
+          fetchProducts(q, activeCategory); 
+          setView('home'); 
+        }} 
+        onCategorySelect={(s) => { 
+          const newCategory = activeCategory === s ? '' : s;
+          setActiveCategory(newCategory); 
+          fetchProducts(searchQuery, newCategory); 
+          setView('home'); 
+        }} 
         setView={setView}
       />
 
       <AnimatePresence mode="wait">
-  {view === 'home' && (
-    <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-      <LandingPage onShopNow={() => productsSectionRef.current?.scrollIntoView({ behavior: 'smooth' })} />
-      <main ref={productsSectionRef} className="px-6 md:px-12 pt-32 pb-32 max-w-7xl mx-auto">
-        <header className="mb-16">
-          <h2 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase">
-            {searchQuery ? searchQuery : activeCategory ? activeCategory : 'New Arrivals'}
-          </h2>
-        </header>
-        <ProductGrid 
-          isLoading={isLoading} 
-          products={products} 
-          onAddToCart={(p) => { 
-            if (!token) return setIsAuthOpen(true); 
-            addToCart(p); 
-            if (window.innerWidth > 768) setIsCartOpen(true); 
-          }} 
-        />
-      </main>
-    </motion.div>
-  )}
+        {view === 'home' && (
+          <motion.div 
+            key="home" 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+          >
+            <LandingPage 
+              onShopNow={() => productsSectionRef.current?.scrollIntoView({ behavior: 'smooth' })} 
+            />
+            <main 
+              ref={productsSectionRef} 
+              className="px-6 md:px-12 pt-32 pb-32 max-w-7xl mx-auto"
+            >
+              <header className="mb-16">
+                <h2 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase">
+                  {searchQuery ? searchQuery : activeCategory ? activeCategory : 'New Arrivals'}
+                </h2>
+              </header>
+              <ProductGrid 
+                isLoading={isLoading} 
+                products={products} 
+                onAddToCart={(p) => { 
+                  if (!token) {
+                    setIsAuthOpen(true);
+                    return;
+                  }
+                  addToCart(p); 
+                  if (window.innerWidth > 768) setIsCartOpen(true); 
+                }} 
+              />
+            </main>
+          </motion.div>
+        )}
 
-  {view === 'orders' && (
-    <motion.div key="orders" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-      <OrdersPage 
-        token={token} 
-        onBack={() => setView('home')} 
+        {view === 'orders' && (
+          <motion.div 
+            key="orders" 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+          >
+            <OrdersPage 
+              token={token} 
+              onBack={() => setView('home')} 
+            />
+          </motion.div>
+        )}
+
+        {view === 'checkout' && (
+          <motion.div 
+            key="checkout" 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+          >
+            <CheckoutPage
+              cartItems={cartItems}
+              total={cartTotal}
+              token={token}
+              onBack={() => setView('home')}
+              onOrderSuccess={() => {
+                clearCart();
+                setView('orders');
+                toast.success('Order placed 🎉');
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <CartSidebar 
+        isOpen={isCartOpen} 
+        onClose={() => setIsCartOpen(false)} 
+        formatImageUrl={formatImageUrl} 
+        onCheckout={() => { 
+          setIsCartOpen(false); 
+          setView('checkout'); 
+        }} 
       />
-    </motion.div>
-  )}
-
-{view === 'checkout' && (
-  <motion.div key="checkout" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-    <CheckoutPage
-      cartItems={cartItems}
-      total={cartTotal}
-      token={token}
-      onBack={() => setView('home')}
-      onOrderSuccess={() => {
-        clearCart();
-        setView('orders');
-        toast.success('Order placed 🎉');
-      }}
-    />
-  </motion.div>
-)}
-
-</AnimatePresence>
-
-
-      <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} formatImageUrl={formatImageUrl} onCheckout={() => { setIsCartOpen(false); setView('checkout'); }} />
-      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} setToken={(t) => { localStorage.setItem('token', t); setToken(t); }} />
+      
+      <AuthModal 
+        isOpen={isAuthOpen} 
+        onClose={() => setIsAuthOpen(false)} 
+        setToken={(t) => { 
+          localStorage.setItem('token', t); 
+          setToken(t); 
+        }} 
+      />
     </div>
   );
 }
