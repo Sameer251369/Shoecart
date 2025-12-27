@@ -28,12 +28,23 @@ const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || '
 
 export const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
   
-  const getImageUrl = () => {
-    const rawPath = product.thumbnail || product.images[0]?.image;
-    if (!rawPath) return null;
-    if (rawPath.startsWith('http')) return rawPath;
-    return `${API_BASE_URL}${rawPath.startsWith('/') ? '' : '/'}${rawPath}`;
-  };
+ const getImageUrl = () => {
+  if (product.thumbnail) {
+    return product.thumbnail.startsWith('http')
+      ? product.thumbnail
+      : `${API_BASE_URL}${product.thumbnail.startsWith('/') ? '' : '/'}${product.thumbnail}`;
+  }
+
+  if (Array.isArray(product.images) && product.images.length > 0) {
+    const img = product.images[0].image;
+    return img.startsWith('http')
+      ? img
+      : `${API_BASE_URL}${img.startsWith('/') ? '' : '/'}${img}`;
+  }
+
+  return null;
+};
+
 
   const imageUrl = getImageUrl();
   const priceDisplay = parseFloat(product.price || '0').toLocaleString('en-IN');

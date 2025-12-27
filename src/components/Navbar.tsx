@@ -16,12 +16,6 @@ interface NavbarProps {
   setView: (view: 'home' | 'checkout' | 'orders') => void;
 }
 
-/**
- * PRODUCTION URL REFERENCE:
- * All data fetched via this Navbar (like categories) flows from:
- * https://shoecart-backend1.onrender.com
- */
-
 export const Navbar = ({ 
   token, username, cartCount, categories, activeCategory,
   onAuthOpen, onLogout, onCartOpen, onSearch, onCategorySelect, setView 
@@ -33,7 +27,6 @@ export const Navbar = ({
     e.preventDefault();
     onSearch(searchInput);
     setShowMobileSearch(false);
-    // Smooth scroll to product section on the live site
     window.scrollTo({ top: 700, behavior: 'smooth' });
   };
 
@@ -80,11 +73,7 @@ export const Navbar = ({
             onClick={() => setShowMobileSearch(!showMobileSearch)}
             className="md:hidden p-2 hover:bg-zinc-100 rounded-lg transition-colors"
           >
-            {showMobileSearch ? (
-              <X className="w-5 h-5" />
-            ) : (
-              <Search className="w-5 h-5" />
-            )}
+            {showMobileSearch ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
           </button>
 
           {/* User Account / Orders Section */}
@@ -101,7 +90,6 @@ export const Navbar = ({
 
             {token && (
               <div className="flex items-center gap-3 ml-2 border-l border-zinc-200 pl-3">
-                {/* Orders Icon Shortcut */}
                 <button 
                   onClick={() => setView('orders')}
                   className="text-zinc-400 hover:text-black transition-colors"
@@ -160,9 +148,7 @@ export const Navbar = ({
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleSubmit(e);
-                    }
+                    if (e.key === 'Enter') handleSubmit(e);
                   }}
                   autoFocus
                 />
@@ -175,13 +161,13 @@ export const Navbar = ({
         )}
       </AnimatePresence>
 
-      {/* CATEGORY BAR - Connects to https://shoecart-backend1.onrender.com */}
+      {/* CATEGORY BAR */}
       <div className="bg-white/90 backdrop-blur-md border-b border-zinc-100 overflow-x-auto scrollbar-hide">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4 flex gap-6 md:gap-10 justify-start md:justify-center min-w-max">
           <button 
             onClick={() => { 
               onCategorySelect(''); 
-              setView('home'); // Ensure we are on home when switching categories
+              setView('home'); 
               window.scrollTo({ top: 700, behavior: 'smooth' }); 
             }}
             className={`text-[9px] font-bold uppercase tracking-[0.25em] transition-all relative pb-1 whitespace-nowrap ${
@@ -189,9 +175,12 @@ export const Navbar = ({
             }`}
           >
             All Collections
-            {activeCategory === '' && <motion.div layoutId="underline" className="absolute bottom-0 left-0 w-full h-[1.5px] bg-black" />}
+            {activeCategory === '' && (
+              <motion.div layoutId="underline" className="absolute bottom-0 left-0 w-full h-[1.5px] bg-black" />
+            )}
           </button>
-          {categories.map((cat) => (
+
+          {Array.isArray(categories) && categories.map((cat) => (
             <button 
               key={cat.id}
               onClick={() => { 
@@ -204,7 +193,9 @@ export const Navbar = ({
               }`}
             >
               {cat.name}
-              {activeCategory === cat.slug && <motion.div layoutId="underline" className="absolute bottom-0 left-0 w-full h-[1.5px] bg-black" />}
+              {activeCategory === cat.slug && (
+                <motion.div layoutId="underline" className="absolute bottom-0 left-0 w-full h-[1.5px] bg-black" />
+              )}
             </button>
           ))}
         </div>
