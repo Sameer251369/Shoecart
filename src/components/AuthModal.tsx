@@ -9,7 +9,8 @@ interface AuthModalProps {
   setToken: (token: string) => void; 
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '').replace(/\/+$/, '') || 'https://shoecart-backend1.onrender.com';
+// Clean up the URL: Remove trailing slashes or /api suffix if present in the env variable
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://shoecart-backend1.onrender.com').replace(/\/+$/, '');
 
 export const AuthModal = ({ isOpen, onClose, setToken }: AuthModalProps) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -22,12 +23,16 @@ export const AuthModal = ({ isOpen, onClose, setToken }: AuthModalProps) => {
     setIsLoading(true);
     setError('');
 
-    // FIXED: Use the correct backend endpoints
+    // Endpoints usually match the Django URLs
     const endpoint = isLogin ? '/api/token/' : '/api/register/';
+    const url = `${API_BASE_URL}${endpoint}`;
     
+    // Note: SimpleJWT usually expects 'username' even if the value is an email.
+    // Check your backend: If your custom User model uses email as the username field, 
+    // keep it as 'email'. If not, change key below to 'username'.
     const payload = isLogin
       ? {
-          email: formData.email.toLowerCase().trim(),
+          username: formData.email.toLowerCase().trim(), // Try 'username' if 'email' fails
           password: formData.password,
         }
       : {
@@ -37,7 +42,7 @@ export const AuthModal = ({ isOpen, onClose, setToken }: AuthModalProps) => {
         };
 
     try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -46,25 +51,30 @@ export const AuthModal = ({ isOpen, onClose, setToken }: AuthModalProps) => {
       const data = await response.json();
 
       if (response.ok) {
+        // SimpleJWT returns 'access', some custom backends return 'token'
         const tokenValue = data.access || data.token;
+        
         if (tokenValue) {
+          localStorage.setItem('token', tokenValue); // Good practice to persist
           setToken(tokenValue);
           toast.success(isLogin ? 'Welcome back!' : 'Account created successfully!');
           onClose();
         } else {
-          setError("Authentication failed. Please try again.");
+          setError("Authentication succeeded but no token was received.");
         }
       } else {
+        // Improved error parsing for Django Rest Framework nested errors
         const errorMsg = data.detail || 
                          (data.non_field_errors ? data.non_field_errors[0] : null) ||
                          (data.email ? `Email: ${data.email[0]}` : null) || 
                          (data.username ? `Username: ${data.username[0]}` : null) || 
+                         (data.password ? `Password: ${data.password[0]}` : null) ||
                          "Please check your credentials.";
         setError(errorMsg);
       }
     } catch (err) {
       console.error('Auth error:', err);
-      setError("Unable to connect to the server. Please try again.");
+      setError("Connection error. Is the backend running?");
     } finally {
       setIsLoading(false);
     }
@@ -131,6 +141,7 @@ export const AuthModal = ({ isOpen, onClose, setToken }: AuthModalProps) => {
                     type="text" 
                     value={formData.username}
                     placeholder="Display name" 
+                    required={!isLogin}
                     className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-3 px-4 outline-none focus:border-black focus:ring-1 focus:ring-black transition-all text-sm"
                     onChange={(e) => setFormData({...formData, username: e.target.value})}
                   />
